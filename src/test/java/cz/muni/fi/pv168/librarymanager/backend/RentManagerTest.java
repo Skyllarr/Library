@@ -1,4 +1,4 @@
-package cz.muni.fi.pv168.bookmanager.backend;
+package cz.muni.fi.pv168.librarymanager.backend;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -7,11 +7,11 @@ package cz.muni.fi.pv168.bookmanager.backend;
  */
 
 import java.util.List;
-import cz.muni.fi.pv168.bookmanager.backend.Book;
-import cz.muni.fi.pv168.bookmanager.backend.BookManager;
-import cz.muni.fi.pv168.bookmanager.backend.Client;
-import cz.muni.fi.pv168.bookmanager.backend.ClientManager;
-import cz.muni.fi.pv168.bookmanager.backend.RentManager;
+import cz.muni.fi.pv168.librarymanager.backend.Book;
+import cz.muni.fi.pv168.librarymanager.backend.BookManager;
+import cz.muni.fi.pv168.librarymanager.backend.Client;
+import cz.muni.fi.pv168.librarymanager.backend.ClientManager;
+import cz.muni.fi.pv168.librarymanager.backend.RentManager;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

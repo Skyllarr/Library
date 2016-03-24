@@ -1,9 +1,9 @@
-package cz.muni.fi.pv168.bookmanager.backend;
+package cz.muni.fi.pv168.librarymanager.backend;
 
 
 import java.util.List;
-import cz.muni.fi.pv168.bookmanager.backend.Book;
-import cz.muni.fi.pv168.bookmanager.backend.BookManager;
+import cz.muni.fi.pv168.librarymanager.backend.Book;
+import cz.muni.fi.pv168.librarymanager.backend.BookManager;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

@@ -1,13 +1,13 @@
-package cz.muni.fi.pv168.bookmanager.backend;
+package cz.muni.fi.pv168.librarymanager.backend;
 
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.function.Consumer;
 import javax.sql.DataSource;
-import cz.muni.fi.pv168.bookmanager.backend.Book;
-import cz.muni.fi.pv168.bookmanager.backend.BookManagerImpl;
-import cz.muni.fi.pv168.bookmanager.common.EntityNotFoundException;
+import cz.muni.fi.pv168.librarymanager.backend.Book;
+import cz.muni.fi.pv168.librarymanager.backend.BookManagerImpl;
+import cz.muni.fi.pv168.librarymanager.common.EntityNotFoundException;
 import org.apache.derby.jdbc.EmbeddedDataSource;
 import org.junit.After;
 import org.junit.Before;

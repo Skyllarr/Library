@@ -3,10 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.muni.fi.pv168.bookmanager.backend;
+package cz.muni.fi.pv168.librarymanager.backend;
 
-import cz.muni.fi.pv168.bookmanager.common.ServiceFailureException;
-import cz.muni.fi.pv168.bookmanager.common.EntityNotFoundException;
+import cz.muni.fi.pv168.librarymanager.common.ServiceFailureException;
+import cz.muni.fi.pv168.librarymanager.common.EntityNotFoundException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
