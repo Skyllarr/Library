@@ -3,11 +3,11 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.muni.fi.pv168.bookmanager.backend;
+package cz.muni.fi.pv168.librarymanager.backend;
 
-import cz.muni.fi.pv168.bookmanager.common.DBUtils;
-import cz.muni.fi.pv168.bookmanager.common.ServiceFailureException;
-import cz.muni.fi.pv168.bookmanager.common.EntityNotFoundException;
+import cz.muni.fi.pv168.librarymanager.common.DBUtils;
+import cz.muni.fi.pv168.librarymanager.common.ServiceFailureException;
+import cz.muni.fi.pv168.librarymanager.common.EntityNotFoundException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -75,7 +75,7 @@ public class BookManagerImpl implements BookManager {
 
             st.setString(1, book.getAuthor());
             st.setString(2, book.getTitle());
-            st.setInt(3, book.getyearofpublication());
+            st.setInt(3, book.getYearOfPublication());
             int addedRows = st.executeUpdate();
             if (addedRows != 1) {
                 throw new ServiceFailureException("Internal Error: More rows ("
@@ -100,7 +100,7 @@ public class BookManagerImpl implements BookManager {
         if (book.getAuthor().isEmpty()) {
             throw new IllegalArgumentException("book author is empty");
         }
-        if (book.getyearofpublication() <= 0) {
+        if (book.getYearOfPublication() <= 0) {
             throw new IllegalArgumentException("book yearofpublication is negative number");
         }
     }
@@ -131,7 +131,7 @@ public class BookManagerImpl implements BookManager {
         book.setId(rs.getLong("id"));
         book.setAuthor(rs.getString("author"));
         book.setTitle(rs.getString("title"));
-        book.setyearofpublication(rs.getInt("yearofpublication"));
+        book.setYearOfPublication(rs.getInt("yearofpublication"));
         return book;
     }
 
@@ -148,7 +148,7 @@ public class BookManagerImpl implements BookManager {
 
             st.setString(1, book.getAuthor());
             st.setString(2, book.getTitle());
-            st.setInt(3, book.getyearofpublication());
+            st.setInt(3, book.getYearOfPublication());
             st.setLong(4, book.getId());
 
             int count = st.executeUpdate();
@@ -292,7 +292,7 @@ public class BookManagerImpl implements BookManager {
         result.setId(rs.getLong("id"));
         result.setAuthor(rs.getString("author"));
         result.setTitle(rs.getString("title"));
-        result.setyearofpublication(rs.getInt("yearofpublication"));
+        result.setYearOfPublication(rs.getInt("yearofpublication"));
         return result;
     }
 }

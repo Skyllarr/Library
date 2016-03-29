@@ -9,3 +9,4 @@
  */
 
 DROP TABLE "BOOK";
+DROP TABLE "CLIENT";

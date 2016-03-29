@@ -1,18 +1,16 @@
-package cz.muni.fi.pv168.bookmanager.backend;
+package cz.muni.fi.pv168.librarymanager.backend;
 
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import javax.sql.DataSource;
-import cz.muni.fi.pv168.bookmanager.common.DBUtils;
-import cz.muni.fi.pv168.bookmanager.common.EntityNotFoundException;
+import cz.muni.fi.pv168.librarymanager.common.DBUtils;
+import cz.muni.fi.pv168.librarymanager.common.EntityNotFoundException;
 import org.apache.derby.jdbc.EmbeddedDataSource;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.Assert.*;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -37,7 +35,7 @@ public class BookManagerImplTest {
     private static DataSource prepareDataSource() throws SQLException {
         EmbeddedDataSource ds = new EmbeddedDataSource();
         //we will use in memory database
-        ds.setDatabaseName("memory:bookmgr-test");
+        ds.setDatabaseName("memory:librarymgr-test");
         ds.setCreateDatabase("create");
         return ds;
     }
@@ -52,9 +50,8 @@ public class BookManagerImplTest {
 
     @After
     public void tearDown() throws SQLException {
-        try (Connection connection = dataSource.getConnection()) {
-            connection.prepareStatement("DROP TABLE BOOK").executeUpdate();
-        }
+        // Drop tables after each test
+        DBUtils.executeSqlScript(dataSource,BookManager.class.getResource("dropTables.sql"));
     }
     
     private BookBuilder sampleBookBuilder() {
@@ -62,7 +59,7 @@ public class BookManagerImplTest {
                 .id(null)
                 .author("sampleAuthor")
                 .title("sampleTitle")
-                .yearofpublication(1);
+                .yearOfPublication(1);
     }
 
 
@@ -180,7 +177,7 @@ public class BookManagerImplTest {
     public void updateBookWithNegativeyearofpublication() {
         Book book = newBook("jean", "Good title", 1992);
         manager.createBook(book);
-        book.setyearofpublication(-1);
+        book.setYearOfPublication(-1);
         expectedException.expect(IllegalArgumentException.class);
         manager.updateBook(book);
     }
@@ -228,7 +225,7 @@ public class BookManagerImplTest {
         Book book = new Book();
         book.setAuthor(author);
         book.setTitle(title);
-        book.setyearofpublication(yearofpublication);
+        book.setYearOfPublication(yearofpublication);
         return book;
     }
 

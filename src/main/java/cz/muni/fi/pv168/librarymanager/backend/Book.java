@@ -1,4 +1,4 @@
-package cz.muni.fi.pv168.bookmanager.backend;
+package cz.muni.fi.pv168.librarymanager.backend;
 
 import java.util.Objects;
 
@@ -11,7 +11,7 @@ public class Book {
     private Long id;
     private String title;    
     private String author;
-    private int yearofpublication;
+    private int yearOfPublication;
 
     public void setTitle(String title) {
         this.title = title;
@@ -21,8 +21,8 @@ public class Book {
         this.author = author;
     }
 
-    public void setyearofpublication(int yearofpublication) {
-        this.yearofpublication = yearofpublication;
+    public void setYearOfPublication(int yearOfPublication) {
+        this.yearOfPublication = yearOfPublication;
     }
 
     public Long setId(Long id) {
@@ -41,8 +41,8 @@ public class Book {
         return author;
     }
 
-    public int getyearofpublication() {
-        return yearofpublication;
+    public int getYearOfPublication() {
+        return yearOfPublication;
     }
 
     @Override
@@ -51,7 +51,7 @@ public class Book {
         hash = 37 * hash + Objects.hashCode(this.id);
         hash = 37 * hash + Objects.hashCode(this.title);
         hash = 37 * hash + Objects.hashCode(this.author);
-        hash = 37 * hash + this.yearofpublication;
+        hash = 37 * hash + this.yearOfPublication;
         return hash;
     }
 
@@ -67,7 +67,7 @@ public class Book {
             return false;
         }
         final Book other = (Book) obj;
-        if (this.yearofpublication != other.yearofpublication) {
+        if (this.yearOfPublication != other.yearOfPublication) {
             return false;
         }
         if (!Objects.equals(this.title, other.title)) {

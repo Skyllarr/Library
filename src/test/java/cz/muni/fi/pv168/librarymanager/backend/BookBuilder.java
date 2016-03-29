@@ -3,17 +3,19 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package cz.muni.fi.pv168.bookmanager.backend;
+
 
 /**
  *
  * @author skylar
  */
+package cz.muni.fi.pv168.librarymanager.backend;
+
 public class BookBuilder {
     private Long id;
     private String author;
     private String title;
-    private int yearofpublication;
+    private int yearOfPublication;
 
     public BookBuilder id(Long id) {
         this.id = id;
@@ -30,8 +32,8 @@ public class BookBuilder {
         return this;
     }
 
-    public BookBuilder yearofpublication(int yearofpublication) {
-        this.yearofpublication = yearofpublication;
+    public BookBuilder yearOfPublication(int yearOfPublication) {
+        this.yearOfPublication = yearOfPublication;
         return this;
     }
 
@@ -40,7 +42,7 @@ public class BookBuilder {
         grave.setId(id);
         grave.setAuthor(author);
         grave.setTitle(title);
-        grave.setyearofpublication(yearofpublication);
+        grave.setYearOfPublication(yearOfPublication);
         return grave;
     }
 }

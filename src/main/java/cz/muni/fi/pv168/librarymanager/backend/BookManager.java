@@ -1,6 +1,6 @@
-package cz.muni.fi.pv168.bookmanager.backend;
+package cz.muni.fi.pv168.librarymanager.backend;
 
-import cz.muni.fi.pv168.bookmanager.common.ServiceFailureException;
+import cz.muni.fi.pv168.librarymanager.common.ServiceFailureException;
 import java.util.List;
 
 /**
