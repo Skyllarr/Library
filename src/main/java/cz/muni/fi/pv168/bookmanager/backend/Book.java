@@ -11,7 +11,7 @@ public class Book {
     private Long id;
     private String title;    
     private String author;
-    private int year;
+    private int yearofpublication;
 
     public void setTitle(String title) {
         this.title = title;
@@ -21,8 +21,8 @@ public class Book {
         this.author = author;
     }
 
-    public void setYear(int year) {
-        this.year = year;
+    public void setyearofpublication(int yearofpublication) {
+        this.yearofpublication = yearofpublication;
     }
 
     public Long setId(Long id) {
@@ -41,8 +41,8 @@ public class Book {
         return author;
     }
 
-    public int getYear() {
-        return year;
+    public int getyearofpublication() {
+        return yearofpublication;
     }
 
     @Override
@@ -51,7 +51,7 @@ public class Book {
         hash = 37 * hash + Objects.hashCode(this.id);
         hash = 37 * hash + Objects.hashCode(this.title);
         hash = 37 * hash + Objects.hashCode(this.author);
-        hash = 37 * hash + this.year;
+        hash = 37 * hash + this.yearofpublication;
         return hash;
     }
 
@@ -67,7 +67,7 @@ public class Book {
             return false;
         }
         final Book other = (Book) obj;
-        if (this.year != other.year) {
+        if (this.yearofpublication != other.yearofpublication) {
             return false;
         }
         if (!Objects.equals(this.title, other.title)) {

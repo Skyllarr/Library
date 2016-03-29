@@ -3,10 +3,8 @@ package cz.muni.fi.pv168.bookmanager.backend;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.function.Consumer;
 import javax.sql.DataSource;
-import cz.muni.fi.pv168.bookmanager.backend.Book;
-import cz.muni.fi.pv168.bookmanager.backend.BookManagerImpl;
+import cz.muni.fi.pv168.bookmanager.common.DBUtils;
 import cz.muni.fi.pv168.bookmanager.common.EntityNotFoundException;
 import org.apache.derby.jdbc.EmbeddedDataSource;
 import org.junit.After;
@@ -34,20 +32,22 @@ public class BookManagerImplTest {
 
     @Rule
     // attribute annotated with @Rule annotation must be public :-(
-    public ExpectedException expectedException = ExpectedException.none();
-
+    public ExpectedException expectedException = ExpectedException.none();    
+    
+    private static DataSource prepareDataSource() throws SQLException {
+        EmbeddedDataSource ds = new EmbeddedDataSource();
+        //we will use in memory database
+        ds.setDatabaseName("memory:bookmgr-test");
+        ds.setCreateDatabase("create");
+        return ds;
+    }
+    
     @Before
     public void setUp() throws SQLException {
         dataSource = prepareDataSource();
-        try (Connection connection = dataSource.getConnection()) {
-            connection.prepareStatement("CREATE TABLE BOOK ("
-                    + "id bigint primary key generated always as identity,"
-                    + "author varchar(255),"
-                    + "title varchar(255),"
-                    + "\"YEAR\" int not null)"
-            ).executeUpdate();
-        }
-        manager = new BookManagerImpl(dataSource);
+        DBUtils.executeSqlScript(dataSource,BookManager.class.getResource("createTables.sql"));
+        manager = new BookManagerImpl();
+        manager.setDataSource(dataSource);
     }
 
     @After
@@ -56,14 +56,15 @@ public class BookManagerImplTest {
             connection.prepareStatement("DROP TABLE BOOK").executeUpdate();
         }
     }
-
-    private static DataSource prepareDataSource() throws SQLException {
-        EmbeddedDataSource ds = new EmbeddedDataSource();
-        //we will use in memory database
-        ds.setDatabaseName("memory:bookmgr-test");
-        ds.setCreateDatabase("create");
-        return ds;
+    
+    private BookBuilder sampleBookBuilder() {
+        return new BookBuilder()
+                .id(null)
+                .author("sampleAuthor")
+                .title("sampleTitle")
+                .yearofpublication(1);
     }
+
 
     @Test
     public void createBook() {
@@ -113,33 +114,20 @@ public class BookManagerImplTest {
     // Test exception using AssertJ assertThatThrownBy() method
     // this requires Java 8 due to using lambda expression
     @Test
-    public void createBookWithEmptyString() {
-        Book book = newBook(null, "Good title", 1992);
+    public void createBookWithEmptyAuthor() {
+        Book book = newBook("", "Good title", 1992);
         assertThatThrownBy(() -> manager.createBook(book))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
-    public void createBookWithNegativeRow() {
-        Book book = newBook("jean", "Good title", 1992);
+    public void createBookWithNegativeYear() {
+        Book book = newBook("jean", "Good title", -5);
         expectedException.expect(IllegalArgumentException.class);
         manager.createBook(book);
     }
 
-    @Test
-    public void createBookWithNegativeCapacity() {
-        Book book = newBook("jean", "Good title", 1992);
-        expectedException.expect(IllegalArgumentException.class);
-        manager.createBook(book);
-    }
-
-    @Test
-    public void createBookWithZeroCapacity() {
-        Book book = newBook("jean", "Good title", 1992);
-        expectedException.expect(IllegalArgumentException.class);
-        manager.createBook(book);
-    }
-
+/*
     private void testUpdate(Consumer<Book> updateOperation) {
         Book sourceBook = newBook("jean", "Good title", 1992);
         Book anotherBook = newBook("jeanA", "Good title2", 1995);
@@ -155,7 +143,7 @@ public class BookManagerImplTest {
         assertThat(manager.getBook(anotherBook.getId()))
                 .isEqualToComparingFieldByField(anotherBook);
     }
-
+*/
     @Test(expected = IllegalArgumentException.class)
     public void updateNullBook() {
         manager.updateBook(null);
@@ -180,28 +168,19 @@ public class BookManagerImplTest {
     }
 
     @Test
-    public void updateBookWithEmptyAuthor() {
-        Book book = newBook("jean", "Good title", 1992);
-        manager.createBook(book);
-        book.setAuthor(null);
-        expectedException.expect(IllegalArgumentException.class);
-        manager.updateBook(book);
-    }
-
-    @Test
     public void updateBookWithEmptyTitle() {
-        Book book = newBook("jean", "Good title", 1992);
+        Book book = newBook("jean", "title", 1992);
         manager.createBook(book);
-        book.setTitle(null);
+        book.setTitle("");
         expectedException.expect(IllegalArgumentException.class);
         manager.updateBook(book);
     }
 
     @Test
-    public void updateBookWithNegativeYear() {
+    public void updateBookWithNegativeyearofpublication() {
         Book book = newBook("jean", "Good title", 1992);
         manager.createBook(book);
-        book.setYear(-1);
+        book.setyearofpublication(-1);
         expectedException.expect(IllegalArgumentException.class);
         manager.updateBook(book);
     }
@@ -245,11 +224,11 @@ public class BookManagerImplTest {
         manager.deleteBook(book);
     }
 
-    private static Book newBook(String author, String title, int year) {
+    private static Book newBook(String author, String title, int yearofpublication) {
         Book book = new Book();
         book.setAuthor(author);
         book.setTitle(title);
-        book.setYear(year);
+        book.setyearofpublication(yearofpublication);
         return book;
     }
 

@@ -5,6 +5,7 @@
  */
 package cz.muni.fi.pv168.bookmanager.backend;
 
+import cz.muni.fi.pv168.bookmanager.common.DBUtils;
 import cz.muni.fi.pv168.bookmanager.common.ServiceFailureException;
 import cz.muni.fi.pv168.bookmanager.common.EntityNotFoundException;
 import java.sql.Connection;
@@ -14,8 +15,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.sql.DataSource;
-import org.apache.derby.jdbc.EmbeddedDataSource;
 
 /**
  *
@@ -23,10 +25,38 @@ import org.apache.derby.jdbc.EmbeddedDataSource;
  */
 public class BookManagerImpl implements BookManager {
 
-    private final DataSource dataSource;
+    private static final Logger logger = Logger.getLogger(
+            BookManagerImpl.class.getName());
+    
+    private DataSource dataSource;
 
-    public BookManagerImpl(DataSource dataSource) {
+    public void setDataSource(DataSource dataSource) {
         this.dataSource = dataSource;
+    }
+    
+    private void checkDataSource() {
+        if (dataSource == null) {
+            throw new IllegalStateException("DataSource is not set");
+        }
+    }
+    
+    @Override
+    public List<Book> findAllBooks() {
+        checkDataSource();
+        Connection conn = null;
+        PreparedStatement st = null;
+        try {
+            conn = dataSource.getConnection();
+            st = conn.prepareStatement(
+                    "SELECT id, author, title, yearofpublication FROM Book");
+            return executeQueryForMultipleBooks(st);
+        } catch (SQLException ex) {
+            String msg = "Error when getting all graves from DB";
+            logger.log(Level.SEVERE, msg, ex);
+            throw new ServiceFailureException(msg, ex);
+        } finally {
+            DBUtils.closeQuietly(conn, st);
+        }          
     }
 
     @Override
@@ -40,12 +70,12 @@ public class BookManagerImpl implements BookManager {
         try (
                 Connection connection = dataSource.getConnection();
                 PreparedStatement st = connection.prepareStatement(
-                        "INSERT INTO BOOK (author,title,year) VALUES (?,?,?)",
+                        "INSERT INTO BOOK (author,title,yearofpublication) VALUES (?,?,?)",
                         Statement.RETURN_GENERATED_KEYS)) {
 
             st.setString(1, book.getAuthor());
             st.setString(2, book.getTitle());
-            st.setInt(3, book.getYear());
+            st.setInt(3, book.getyearofpublication());
             int addedRows = st.executeUpdate();
             if (addedRows != 1) {
                 throw new ServiceFailureException("Internal Error: More rows ("
@@ -70,8 +100,8 @@ public class BookManagerImpl implements BookManager {
         if (book.getAuthor().isEmpty()) {
             throw new IllegalArgumentException("book author is empty");
         }
-        if (book.getYear() <= 0) {
-            throw new IllegalArgumentException("book year is negative number");
+        if (book.getyearofpublication() <= 0) {
+            throw new IllegalArgumentException("book yearofpublication is negative number");
         }
     }
 
@@ -101,7 +131,7 @@ public class BookManagerImpl implements BookManager {
         book.setId(rs.getLong("id"));
         book.setAuthor(rs.getString("author"));
         book.setTitle(rs.getString("title"));
-        book.setYear(rs.getInt("year"));
+        book.setyearofpublication(rs.getInt("yearofpublication"));
         return book;
     }
 
@@ -114,11 +144,11 @@ public class BookManagerImpl implements BookManager {
         try (
                 Connection connection = dataSource.getConnection();
                 PreparedStatement st = connection.prepareStatement(
-                        "UPDATE Book SET author = ?, title = ?, year = ? WHERE id = ?")) {
+                        "UPDATE Book SET author = ?, title = ?, yearofpublication = ? WHERE id = ?")) {
 
             st.setString(1, book.getAuthor());
             st.setString(2, book.getTitle());
-            st.setInt(3, book.getYear());
+            st.setInt(3, book.getyearofpublication());
             st.setLong(4, book.getId());
 
             int count = st.executeUpdate();
@@ -161,32 +191,11 @@ public class BookManagerImpl implements BookManager {
     }
 
     @Override
-    public List<Book> findAllBooks() {
-        try (
-                Connection connection = dataSource.getConnection();
-                PreparedStatement st = connection.prepareStatement(
-                        "SELECT id,author,title,year FROM book")) {
-
-            ResultSet rs = st.executeQuery();
-
-            List<Book> result = new ArrayList<>();
-            while (rs.next()) {
-                result.add(resultSetToBook(rs));
-            }
-            return result;
-
-        } catch (SQLException ex) {
-            throw new ServiceFailureException(
-                    "Error when retrieving all books", ex);
-        }
-    }
-
-    @Override
     public List<Book> findBooksByAuthor(String author) {
         try (
                 Connection connection = dataSource.getConnection();
                 PreparedStatement st = connection.prepareStatement(
-                        "SELECT id,author,title,year FROM book WHERE author = ?")) {
+                        "SELECT id,author,title,yearofpublication FROM book WHERE author = ?")) {
 
             st.setString(1, author);
             ResultSet rs = st.executeQuery();
@@ -208,7 +217,7 @@ public class BookManagerImpl implements BookManager {
         try (
                 Connection connection = dataSource.getConnection();
                 PreparedStatement st = connection.prepareStatement(
-                        "SELECT id,author,title,year FROM book WHERE title = ?")) {
+                        "SELECT id,author,title,yearofpublication FROM book WHERE title = ?")) {
 
             st.setString(1, title);
             ResultSet rs = st.executeQuery();
@@ -230,7 +239,7 @@ public class BookManagerImpl implements BookManager {
         try (
                 Connection connection = dataSource.getConnection();
                 PreparedStatement st = connection.prepareStatement(
-                        "SELECT id,author,title,year FROM book WHERE id = ?")) {
+                        "SELECT id,author,title,yearofpublication FROM book WHERE id = ?")) {
 
             st.setLong(1, id);
             ResultSet rs = st.executeQuery();
@@ -253,5 +262,37 @@ public class BookManagerImpl implements BookManager {
             throw new ServiceFailureException(
                     "Error when retrieving book with id " + id, ex);
         }
+    }
+    
+    static List<Book> executeQueryForMultipleBooks(PreparedStatement st) throws SQLException {
+        ResultSet rs = st.executeQuery();
+        List<Book> result = new ArrayList<Book>();
+        while (rs.next()) {
+            result.add(rowToBook(rs));
+        }
+        return result;
+    }
+    
+    static Book executeQueryForSingleGrave(PreparedStatement st) throws SQLException, ServiceFailureException {
+        ResultSet rs = st.executeQuery();
+        if (rs.next()) {
+            Book result = rowToBook(rs);                
+            if (rs.next()) {
+                throw new ServiceFailureException(
+                        "Internal integrity error: more graves with the same id found!");
+            }
+            return result;
+        } else {
+            return null;
+        }
+    }
+    
+    private static Book rowToBook(ResultSet rs) throws SQLException {
+        Book result = new Book();
+        result.setId(rs.getLong("id"));
+        result.setAuthor(rs.getString("author"));
+        result.setTitle(rs.getString("title"));
+        result.setyearofpublication(rs.getInt("yearofpublication"));
+        return result;
     }
 }
