@@ -10,8 +10,10 @@ import org.junit.rules.ExpectedException;
 
 import static org.assertj.core.api.Assertions.*;
 
+// add more tests of ClientManager implementation
+
 /**
- *
+ * 
  * @author Josef Pavelec, Faculty of Informatics, Masaryk University
  */
 public class ClientManagerImplTest {
