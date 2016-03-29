@@ -1,5 +1,6 @@
 package cz.muni.fi.pv168.librarymanager.backend;
 
+import cz.muni.fi.pv168.librarymanager.common.ServiceFailureException;
 import java.util.List;
 
 /**
@@ -26,17 +27,19 @@ public interface ClientManager {
      */
     public void deleteClient(Client client);
     
+    public List<Client> findClientsBySurname(String surname);
+    public List<Client> findClientsByName(String surname);
     /**
      * Method list all existing clients
      * @return all clients as list of Client
      */
-    public List<Client> findAllPerson();
+    public List<Client> findAllClients();
     
     /**
      * Method find client by his id number
      * @param id number
      * @return Client or null if for input id number client doesn't exist
      */
-    public Client findPersonById(Long id);
+    public Client findClientById(Long id);
 
 }

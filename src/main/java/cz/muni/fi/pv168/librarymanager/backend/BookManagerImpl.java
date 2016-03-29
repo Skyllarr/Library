@@ -51,7 +51,7 @@ public class BookManagerImpl implements BookManager {
                     "SELECT id, author, title, yearofpublication FROM Book");
             return executeQueryForMultipleBooks(st);
         } catch (SQLException ex) {
-            String msg = "Error when getting all graves from DB";
+            String msg = "Error when getting all books from DB";
             logger.log(Level.SEVERE, msg, ex);
             throw new ServiceFailureException(msg, ex);
         } finally {

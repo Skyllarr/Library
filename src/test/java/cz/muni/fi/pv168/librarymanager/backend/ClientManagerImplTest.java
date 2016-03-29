@@ -36,14 +36,7 @@ public class ClientManagerImplTest {
         DBUtils.executeSqlScript(dataSource,ClientManager.class.getResource("dropTables.sql"));
     }
     
-    private ClientBuilder sampleFemaleClientBuilder() {
-        return new ClientBuilder()
-                .id(null)
-                .name("Jana")
-                .surname("Nováková");
-    }
-    
-    private ClientBuilder sampleMaleClientBuilder() {
+    private ClientBuilder sampleClientBuilder() {
         return new ClientBuilder()
                 .id(null)
                 .name("Filip")
@@ -57,21 +50,21 @@ public class ClientManagerImplTest {
     
     @Test
     public void createClient() {
-        Client client = sampleFemaleClientBuilder().build();
+        Client client = sampleClientBuilder().build();
         manager.createClient(client);
         
         Long clientId = client.getId();
         assertThat(clientId).isNotNull();
         
-        assertThat(manager.findPersonById(clientId))
+        assertThat(manager.findClientById(clientId))
                 .isNotSameAs(client)
                 .isEqualToComparingFieldByField(client);
     }
     
     @Test
     public void createClientWithExistingId() {
-        Client client = sampleFemaleClientBuilder().id(1L).build();
-        expectedException.expect(IllegalEntityException.class);
+        Client client = sampleClientBuilder().id(1L).build();
+        expectedException.expect(IllegalArgumentException.class);
         manager.createClient(client);
     }
     
@@ -82,30 +75,30 @@ public class ClientManagerImplTest {
     */
     @Test
     public void createClientWithEmptyName() {
-        Client client = sampleFemaleClientBuilder().name("").build();
-        expectedException.expect(ValidationException.class);
-        manager.createClient(client);
+        Client client = newClient("", "surname");
+        assertThatThrownBy(() -> manager.createClient(client))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
-    public void createClientWithEmptySurame() {
-        Client client = sampleFemaleClientBuilder().surname("").build();
-        expectedException.expect(ValidationException.class);
-        manager.createClient(client);
+    public void createClientWithEmptySurame() {        
+        Client client = newClient("name", "");
+        assertThatThrownBy(() -> manager.createClient(client))
+                .isInstanceOf(IllegalArgumentException.class);
     }
     
     @Test
     public void createClientWithNullName() {
-        Client client = sampleFemaleClientBuilder().name(null).build();
-        expectedException.expect(ValidationException.class);
-        manager.createClient(client);
+        Client client = newClient(null, "surname");
+        assertThatThrownBy(() -> manager.createClient(client))
+                .isInstanceOf(NullPointerException.class);
     }
     
     @Test
     public void createClientWithNullSurname() {
-        Client client = sampleFemaleClientBuilder().surname(null).build();
-        expectedException.expect(ValidationException.class);
-        manager.createClient(client);
+        Client client = newClient("name", null);
+        assertThatThrownBy(() -> manager.createClient(client))
+                .isInstanceOf(NullPointerException.class);
     }
     
     private static DataSource prepareDataSource() throws SQLException {
@@ -116,4 +109,10 @@ public class ClientManagerImplTest {
         return ds;
     }
     
+    private static Client newClient(String name, String surname) {
+        Client client = new Client();
+        client.setName(name);
+        client.setSurname(surname);
+        return client;
+    }
 }
