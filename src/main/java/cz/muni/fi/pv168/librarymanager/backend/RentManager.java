@@ -50,5 +50,5 @@ public interface RentManager {
      */
     public List<Book> findRentBooksByClient(Client client);
            
-    
+    public Rent findRentById(Long id);
 }

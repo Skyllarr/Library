@@ -25,7 +25,7 @@ public class ClientManagerImplTest {
     @Before
     public void setUp() throws SQLException {
         dataSource = prepareDataSource();
-        DBUtils.executeSqlScript(dataSource,BookManager.class.getResource("createTables.sql"));
+        DBUtils.executeSqlScript(dataSource,ClientManager.class.getResource("createTables.sql"));
         manager = new ClientManagerImpl();
         manager.setDataSource(dataSource);      
     }
