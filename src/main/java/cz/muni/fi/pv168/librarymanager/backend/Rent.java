@@ -1,6 +1,7 @@
 package cz.muni.fi.pv168.librarymanager.backend;
 
 import java.time.LocalDate;
+import java.util.Objects;
 
 /**
  *
@@ -13,6 +14,24 @@ public class Rent {
     private LocalDate endDay;
     private Client client;
     private Book book;
+    private Long bookId;
+    private Long clientId;
+
+    public Long getBookId() {
+        return bookId;
+    }
+
+    public void setBookId(Long bookId) {
+        this.bookId = bookId;
+    }
+
+    public Long getClientId() {
+        return clientId;
+    }
+
+    public void setClientId(Long clientId) {
+        this.clientId = clientId;
+    }
 
     public Long getId() {
         return id;
@@ -52,6 +71,47 @@ public class Rent {
 
     public void setBook(Book book) {
         this.book = book;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 53 * hash + Objects.hashCode(this.id);
+        hash = 53 * hash + Objects.hashCode(this.startDay);
+        hash = 53 * hash + Objects.hashCode(this.endDay);
+        hash = 53 * hash + Objects.hashCode(this.client);
+        hash = 53 * hash + Objects.hashCode(this.book);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Rent other = (Rent) obj;
+        if (!Objects.equals(this.id, other.id)) {
+            return false;
+        }
+        if (!Objects.equals(this.startDay, other.startDay)) {
+            return false;
+        }
+        if (!Objects.equals(this.endDay, other.endDay)) {
+            return false;
+        }
+        if (!Objects.equals(this.client, other.client)) {
+            return false;
+        }
+        if (!Objects.equals(this.book, other.book)) {
+            return false;
+        }
+        return true;
     }
     
 

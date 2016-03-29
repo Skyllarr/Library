@@ -14,21 +14,21 @@ public interface RentManager {
      * @param client client who rent a book
      * @param book book what will be rent
      */
-    public void createRent(Client client, Book book);
+    public void createRent(Rent rent);
     
     /**
      * Method change existing rent (eg. extend of rent time)
      * @param client client
      * @param book book
      */
-    public void updateRent(Client client, Book book);
+    public void updateRent(Rent rent);
     
     /**
      * Method delete existing rent
      * @param client client
      * @param book book
      */
-    public void deleteRent(Client client, Book book);
+    public void deleteRent(Rent rent);
     
     /**
      * Method find all rent what has delayed return

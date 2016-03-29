@@ -67,12 +67,7 @@ public class ClientManagerImplTest {
         expectedException.expect(IllegalArgumentException.class);
         manager.createClient(client);
     }
-    
-    /* We may use assertThatThrownBy()
-        Client client = sampleFemaleClientBuilder().name("").build();
-        assertThatThrownBy(() -> manager.createClient(client))
-                .isInstanceOf(ValidationException.class);
-    */
+
     @Test
     public void createClientWithEmptyName() {
         Client client = newClient("", "surname");

@@ -1,10 +1,10 @@
 package cz.muni.fi.pv168.librarymanager.backend;
 
-
 import java.sql.SQLException;
 import javax.sql.DataSource;
 import cz.muni.fi.pv168.librarymanager.common.DBUtils;
 import cz.muni.fi.pv168.librarymanager.common.EntityNotFoundException;
+import java.util.function.Consumer;
 import org.apache.derby.jdbc.EmbeddedDataSource;
 import org.junit.After;
 import org.junit.Before;
@@ -14,14 +14,9 @@ import org.junit.rules.ExpectedException;
 
 import static org.assertj.core.api.Assertions.*;
 
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 /**
  *
- * @author skylar
+ * @author diana vilkolakova
  */
 public class BookManagerImplTest {
 
@@ -29,31 +24,28 @@ public class BookManagerImplTest {
     private DataSource dataSource;
 
     @Rule
-    // attribute annotated with @Rule annotation must be public :-(
-    public ExpectedException expectedException = ExpectedException.none();    
-    
+    public ExpectedException expectedException = ExpectedException.none();
+
     private static DataSource prepareDataSource() throws SQLException {
         EmbeddedDataSource ds = new EmbeddedDataSource();
-        //we will use in memory database
         ds.setDatabaseName("memory:librarymgr-test");
         ds.setCreateDatabase("create");
         return ds;
     }
-    
+
     @Before
     public void setUp() throws SQLException {
         dataSource = prepareDataSource();
-        DBUtils.executeSqlScript(dataSource,BookManager.class.getResource("createTables.sql"));
+        DBUtils.executeSqlScript(dataSource, BookManager.class.getResource("createTables.sql"));
         manager = new BookManagerImpl();
         manager.setDataSource(dataSource);
     }
 
     @After
     public void tearDown() throws SQLException {
-        // Drop tables after each test
-        DBUtils.executeSqlScript(dataSource,BookManager.class.getResource("dropTables.sql"));
+        DBUtils.executeSqlScript(dataSource, BookManager.class.getResource("dropTables.sql"));
     }
-    
+
     private BookBuilder sampleBookBuilder() {
         return new BookBuilder()
                 .id(null)
@@ -61,7 +53,6 @@ public class BookManagerImplTest {
                 .title("sampleTitle")
                 .yearOfPublication(1);
     }
-
 
     @Test
     public void createBook() {
@@ -91,15 +82,11 @@ public class BookManagerImplTest {
                 .containsOnly(g1, g2);
     }
 
-    // Test exception with expected parameter of @Test annotation
-    // it does not allow to specify exact place where the exception
-    // is expected, therefor it is suitable only for simple single line tests
     @Test(expected = IllegalArgumentException.class)
     public void createNullBook() {
         manager.createBook(null);
     }
 
-    // Test exception with ExpectedException @Rule
     @Test
     public void createBookWithExistingId() {
         Book book = newBook("jean", "Good title", 1992);
@@ -108,8 +95,6 @@ public class BookManagerImplTest {
         manager.createBook(book);
     }
 
-    // Test exception using AssertJ assertThatThrownBy() method
-    // this requires Java 8 due to using lambda expression
     @Test
     public void createBookWithEmptyAuthor() {
         Book book = newBook("", "Good title", 1992);
@@ -124,7 +109,6 @@ public class BookManagerImplTest {
         manager.createBook(book);
     }
 
-/*
     private void testUpdate(Consumer<Book> updateOperation) {
         Book sourceBook = newBook("jean", "Good title", 1992);
         Book anotherBook = newBook("jeanA", "Good title2", 1995);
@@ -140,7 +124,7 @@ public class BookManagerImplTest {
         assertThat(manager.getBook(anotherBook.getId()))
                 .isEqualToComparingFieldByField(anotherBook);
     }
-*/
+
     @Test(expected = IllegalArgumentException.class)
     public void updateNullBook() {
         manager.updateBook(null);
@@ -228,5 +212,4 @@ public class BookManagerImplTest {
         book.setYearOfPublication(yearofpublication);
         return book;
     }
-
 }
