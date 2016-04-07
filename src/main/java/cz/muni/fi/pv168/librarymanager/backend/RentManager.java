@@ -11,22 +11,19 @@ public interface RentManager {
     
     /**
      * Method create new rent of a book for client
-     * @param client client who rent a book
-     * @param book book what will be rent
+     * @param rent is new rent to create
      */
     public void createRent(Rent rent);
     
     /**
      * Method change existing rent (eg. extend of rent time)
-     * @param client client
-     * @param book book
+     * @param rent is rent to update
      */
     public void updateRent(Rent rent);
     
     /**
      * Method delete existing rent
-     * @param client client
-     * @param book book
+     * @param rent is rent to delete
      */
     public void deleteRent(Rent rent);
     
@@ -49,6 +46,11 @@ public interface RentManager {
      * @return rent books as list of Book
      */
     public List<Book> findRentBooksByClient(Client client);
-           
+      
+    /**
+     * Method find rent by rent id
+     * @param id rent id
+     * @return book with input id or null when book doesn't exist
+     */
     public Rent findRentById(Long id);
 }

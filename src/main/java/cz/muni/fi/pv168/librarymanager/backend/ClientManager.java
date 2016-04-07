@@ -1,6 +1,5 @@
 package cz.muni.fi.pv168.librarymanager.backend;
 
-import cz.muni.fi.pv168.librarymanager.common.ServiceFailureException;
 import java.util.List;
 
 /**
@@ -40,6 +39,6 @@ public interface ClientManager {
      * @param id number
      * @return Client or null if for input id number client doesn't exist
      */
-    public Client findClientById(Long id);
+    public Client getClient(Long id);
 
 }

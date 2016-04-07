@@ -1,8 +1,6 @@
 package cz.muni.fi.pv168.librarymanager.backend;
 
-import cz.muni.fi.pv168.librarymanager.common.DBUtils;
-import cz.muni.fi.pv168.librarymanager.common.EntityNotFoundException;
-import cz.muni.fi.pv168.librarymanager.common.ServiceFailureException;
+import cz.muni.fi.pv168.librarymanager.common.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -17,6 +15,7 @@ import javax.sql.DataSource;
 /**
  *
  * @author Josef Pavelec, Faculty of Informatics, Masaryk University
+ * @author Diana Vilkolakova
  */
 public class ClientManagerImpl implements ClientManager {
     
@@ -36,7 +35,7 @@ public class ClientManagerImpl implements ClientManager {
     }
 
     @Override
-    public Client findClientById(Long id) {
+    public Client getClient(Long id) {
         try (
                 Connection connection = dataSource.getConnection();
                 PreparedStatement st = connection.prepareStatement(
@@ -61,7 +60,7 @@ public class ClientManagerImpl implements ClientManager {
 
         } catch (SQLException ex) {
             throw new ServiceFailureException(
-                    "Error when retrieving book with id " + id, ex);
+                    "Error when retrieving client with id " + id, ex);
         }
     }
 
@@ -89,7 +88,7 @@ public class ClientManagerImpl implements ClientManager {
 
         validate(client);
         if (client.getId() != null) {
-            throw new IllegalArgumentException("client id is already set");
+            throw new IllegalEntityException("client id is already set");
         }
 
         try (
@@ -116,13 +115,19 @@ public class ClientManagerImpl implements ClientManager {
 
     private void validate(Client client) throws IllegalArgumentException {
         if (client == null) {
-            throw new IllegalArgumentException("book is null");
+            throw new IllegalArgumentException("client is null");
+        }
+        if (client.getName() == null) {
+            throw new ValidationException("client name is null");
+        }
+        if (client.getSurname() == null) {
+            throw new ValidationException("client surname is null");
         }
         if (client.getName().isEmpty()) {
-            throw new IllegalArgumentException("book title is empty");
+            throw new ValidationException("client name is empty");
         }
         if (client.getSurname().isEmpty()) {
-            throw new IllegalArgumentException("book author is empty");
+            throw new ValidationException("client surname is empty");
         }
     }
 
@@ -156,10 +161,10 @@ public class ClientManagerImpl implements ClientManager {
     }
 
     @Override
-    public void updateClient(Client client) {
+    public void updateClient(Client client) throws IllegalEntityException {
         validate(client);
         if (client.getId() == null) {
-            throw new IllegalArgumentException("client id is null");
+            throw new IllegalEntityException("client id is null");
         }
         try (
                 Connection connection = dataSource.getConnection();
@@ -168,11 +173,11 @@ public class ClientManagerImpl implements ClientManager {
 
             st.setString(1, client.getName());
             st.setString(2, client.getSurname());
-            st.setLong(4, client.getId());
+            st.setLong(3, client.getId());
 
             int count = st.executeUpdate();
             if (count == 0) {
-                throw new EntityNotFoundException("Book " + client + " was not found in database!");
+                throw new IllegalEntityException("Client " + client + " was not found in database!");
             } else if (count != 1) {
                 throw new ServiceFailureException("Invalid updated rows count detected (one row should be updated): " + count);
             }
@@ -214,7 +219,7 @@ public class ClientManagerImpl implements ClientManager {
         try (
                 Connection connection = dataSource.getConnection();
                 PreparedStatement st = connection.prepareStatement(
-                        "SELECT id,name, surname FROM book WHERE name = ?")) {
+                        "SELECT id, name, surname FROM client WHERE name = ?")) {
 
             st.setString(1, name);
             ResultSet rs = st.executeQuery();
@@ -236,7 +241,7 @@ public class ClientManagerImpl implements ClientManager {
         try (
                 Connection connection = dataSource.getConnection();
                 PreparedStatement st = connection.prepareStatement(
-                        "SELECT id,name,surname FROM book WHERE surname = ?")) {
+                        "SELECT id,name,surname FROM client WHERE surname = ?")) {
 
             st.setString(1, surname);
             ResultSet rs = st.executeQuery();
