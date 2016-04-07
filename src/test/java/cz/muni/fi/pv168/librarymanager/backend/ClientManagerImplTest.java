@@ -93,7 +93,7 @@ public class ClientManagerImplTest {
     }
 
     @Test
-    public void createClientWithEmptySurame() {        
+    public void createClientWithEmptySurname() {        
         Client client = sampleFemaleClientBuilder().surname("")
                                                    .build();
         expectedException.expect(ValidationException.class);
@@ -163,8 +163,29 @@ public class ClientManagerImplTest {
     }
     
     @Test
+    public void upadateClientNullName() {
+        Client client = sampleFemaleClientBuilder().name(null).build();
+        expectedException.expect(ValidationException.class);
+        manager.updateClient(client);
+    }
+    
+    @Test
+    public void upadateClientNullSurname() {
+        Client client = sampleFemaleClientBuilder().surname(null).build();
+        expectedException.expect(ValidationException.class);
+        manager.updateClient(client);
+    }
+    
+    @Test
     public void updateNonExistingClient() {
         Client client = sampleFemaleClientBuilder().id(100L).build();
+        expectedException.expect(IllegalEntityException.class);
+        manager.updateClient(client);
+    }
+    
+    @Test
+    public void updateClientWithExistingId() {
+        Client client = sampleFemaleClientBuilder().id(1L).build();
         expectedException.expect(IllegalEntityException.class);
         manager.updateClient(client);
     }
@@ -188,6 +209,13 @@ public class ClientManagerImplTest {
     @Test(expected = IllegalArgumentException.class)
     public void deleteNullClient() {
         manager.deleteClient(null);
+    }
+    
+    @Test
+    public void deleteNonExistingClient() {
+        Client client = sampleMaleClientBuilder().id(1L).build();
+        expectedException.expect(EntityNotFoundException.class);
+        manager.deleteClient(client);
     }
     
     @Test
