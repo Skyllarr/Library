@@ -16,7 +16,9 @@ import static org.assertj.core.api.Assertions.*;
 
 /**
  *
- * @author diana vilkolakova
+ * @author Diana Vilkolakova
+ * @author Josef Pavelec, Faculty of Informatics, Masaryk University
+ *
  */
 public class BookManagerImplTest {
 
@@ -46,17 +48,25 @@ public class BookManagerImplTest {
         DBUtils.executeSqlScript(dataSource, BookManager.class.getResource("dropTables.sql"));
     }
 
-    private BookBuilder sampleBookBuilder() {
+    private BookBuilder samplePoeBookBuilder() {
         return new BookBuilder()
                 .id(null)
-                .author("sampleAuthor")
-                .title("sampleTitle")
-                .yearOfPublication(1);
+                .author("Edgar Allan Poe")
+                .title("Havran")
+                .yearOfPublication(1995);
+    }
+    
+    private BookBuilder sampleHemBookBuilder() {
+        return new BookBuilder()
+                .id(null)
+                .author("Ernest Hemingway")
+                .title("Stařec a moře")
+                .yearOfPublication(2005);
     }
 
     @Test
     public void createBook() {
-        Book book = newBook("jean", "Good title", 1992);
+        Book book = samplePoeBookBuilder().build();
         manager.createBook(book);
 
         Long bookId = book.getId();

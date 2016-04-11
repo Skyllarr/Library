@@ -21,7 +21,9 @@ import javax.sql.DataSource;
 
 /**
  *
- * @author skylar
+ * @author Diana Vilkolakova
+ * @author Josef Pavelec, Faculty of Informatics, Masaryk University
+ *
  */
 public class BookManagerImpl implements BookManager {
 
@@ -126,7 +128,7 @@ public class BookManagerImpl implements BookManager {
         }
     }
 
-    private Book resultSetToBook(ResultSet rs) throws SQLException {
+    public static Book resultSetToBook(ResultSet rs) throws SQLException {
         Book book = new Book();
         book.setId(rs.getLong("id"));
         book.setAuthor(rs.getString("author"));

@@ -44,23 +44,23 @@ public class ClientManagerImplTest {
         DBUtils.executeSqlScript(dataSource,ClientManager.class.getResource("dropTables.sql"));
     }
     
-    private ClientBuilder sampleFemaleClientBuilder() {
+    private ClientBuilder sampleJaneClientBuilder() {
         return new ClientBuilder()
                 .id(null)
-                .name("Jana")
+                .name("Jane")
                 .surname("Blažková");
     }
     
-    private ClientBuilder sampleMaleClientBuilder() {
+    private ClientBuilder samplePhilipClientBuilder() {
         return new ClientBuilder()
                 .id(null)
-                .name("Filip")
+                .name("Philip")
                 .surname("Březňák");
     }
         
     @Test
     public void createClient() {
-        Client client = sampleMaleClientBuilder().build();
+        Client client = samplePhilipClientBuilder().build();
         manager.createClient(client);
         
         Long clientId = client.getId();
@@ -79,22 +79,22 @@ public class ClientManagerImplTest {
     
     @Test
     public void createClientWithExistingId() {
-        Client client = sampleMaleClientBuilder().id(1L).build();
+        Client client = samplePhilipClientBuilder().id(1L).build();
         expectedException.expect(IllegalEntityException.class);
         manager.createClient(client);
     }
 
     @Test
     public void createClientWithEmptyName() {
-        Client client = sampleFemaleClientBuilder().name("")
+        Client client = sampleJaneClientBuilder().name("")
                                                    .build();
         expectedException.expect(ValidationException.class);
         manager.createClient(client);
     }
 
     @Test
-    public void createClientWithEmptySurame() {        
-        Client client = sampleFemaleClientBuilder().surname("")
+    public void createClientWithEmptySurname() {        
+        Client client = sampleJaneClientBuilder().surname("")
                                                    .build();
         expectedException.expect(ValidationException.class);
         manager.createClient(client);
@@ -102,7 +102,7 @@ public class ClientManagerImplTest {
     
     @Test
     public void createClientWithNullName() {
-        Client client = sampleFemaleClientBuilder().name(null)
+        Client client = sampleJaneClientBuilder().name(null)
                                                    .build();
         expectedException.expect(ValidationException.class);
         manager.createClient(client);
@@ -110,7 +110,7 @@ public class ClientManagerImplTest {
     
     @Test
     public void createClientWithNullSurname() {
-        Client client = sampleFemaleClientBuilder().surname(null)
+        Client client = sampleJaneClientBuilder().surname(null)
                                                    .build();
         expectedException.expect(ValidationException.class);
         manager.createClient(client);
@@ -118,8 +118,8 @@ public class ClientManagerImplTest {
     
     @Test
     public void updateClientName() {
-        Client clientForUpdate = sampleMaleClientBuilder().build();
-        Client anotherClient = sampleFemaleClientBuilder().build();
+        Client clientForUpdate = samplePhilipClientBuilder().build();
+        Client anotherClient = sampleJaneClientBuilder().build();
         manager.createClient(clientForUpdate);
         manager.createClient(anotherClient);
 
@@ -135,8 +135,8 @@ public class ClientManagerImplTest {
     
     @Test
     public void updateClientSurname() {
-        Client clientForUpdate = sampleMaleClientBuilder().build();
-        Client anotherClient = sampleFemaleClientBuilder().build();
+        Client clientForUpdate = samplePhilipClientBuilder().build();
+        Client anotherClient = sampleJaneClientBuilder().build();
         manager.createClient(clientForUpdate);
         manager.createClient(anotherClient);
 
@@ -157,22 +157,43 @@ public class ClientManagerImplTest {
     
     @Test
     public void upadateClientNullId() {
-        Client client = sampleFemaleClientBuilder().id(null).build();
+        Client client = sampleJaneClientBuilder().id(null).build();
         expectedException.expect(IllegalEntityException.class);
         manager.updateClient(client);
     }
     
     @Test
+    public void upadateClientNullName() {
+        Client client = sampleJaneClientBuilder().name(null).build();
+        expectedException.expect(ValidationException.class);
+        manager.updateClient(client);
+    }
+    
+    @Test
+    public void upadateClientNullSurname() {
+        Client client = sampleJaneClientBuilder().surname(null).build();
+        expectedException.expect(ValidationException.class);
+        manager.updateClient(client);
+    }
+    
+    @Test
     public void updateNonExistingClient() {
-        Client client = sampleFemaleClientBuilder().id(100L).build();
+        Client client = sampleJaneClientBuilder().id(100L).build();
+        expectedException.expect(IllegalEntityException.class);
+        manager.updateClient(client);
+    }
+    
+    @Test
+    public void updateClientWithExistingId() {
+        Client client = sampleJaneClientBuilder().id(1L).build();
         expectedException.expect(IllegalEntityException.class);
         manager.updateClient(client);
     }
     
     @Test
     public void deleteClient() {
-        Client client = sampleFemaleClientBuilder().build();
-        Client clientToDelete = sampleMaleClientBuilder().build();
+        Client client = sampleJaneClientBuilder().build();
+        Client clientToDelete = samplePhilipClientBuilder().build();
         
         manager.createClient(clientToDelete);
         manager.createClient(client);
@@ -191,11 +212,18 @@ public class ClientManagerImplTest {
     }
     
     @Test
+    public void deleteNonExistingClient() {
+        Client client = samplePhilipClientBuilder().id(1L).build();
+        expectedException.expect(EntityNotFoundException.class);
+        manager.deleteClient(client);
+    }
+    
+    @Test
     public void findAllClients() {
         assertThat(manager.findAllClients()).isEmpty();
         
-        Client clientFemale = sampleFemaleClientBuilder().build();
-        Client clientMale = sampleMaleClientBuilder().build();
+        Client clientFemale = sampleJaneClientBuilder().build();
+        Client clientMale = samplePhilipClientBuilder().build();
         
         manager.createClient(clientFemale);
         manager.createClient(clientMale);
@@ -207,7 +235,7 @@ public class ClientManagerImplTest {
     
     @Test
     public void findCLientsByName() {
-        Client client = sampleMaleClientBuilder().name("Jan").build();
+        Client client = samplePhilipClientBuilder().name("Jan").build();
         assertThat(manager.findClientsByName(client.getName())).isEmpty();
         
         manager.createClient(client);
@@ -219,7 +247,7 @@ public class ClientManagerImplTest {
     
     @Test
     public void findCLientsBySurname() {
-        Client client = sampleMaleClientBuilder().surname("Krakonoš").build();
+        Client client = samplePhilipClientBuilder().surname("Krakonoš").build();
         assertThat(manager.findClientsBySurname(client.getSurname())).isEmpty();
         
         manager.createClient(client);
@@ -246,21 +274,21 @@ public class ClientManagerImplTest {
 
     @Test
     public void updateClientWithSqlExceptionThrown() throws SQLException {
-        Client client = sampleFemaleClientBuilder().build();
+        Client client = sampleJaneClientBuilder().build();
         manager.createClient(client);
         testExpectedServiceFailureException((clientManager) -> clientManager.updateClient(client));
     }
 
     @Test
     public void getClientWithSqlExceptionThrown() throws SQLException {
-        Client client = sampleFemaleClientBuilder().build();
+        Client client = sampleJaneClientBuilder().build();
         manager.createClient(client);
         testExpectedServiceFailureException((clientManager) -> clientManager.getClient(client.getId()));
     }
 
     @Test
     public void deleteClientWithSqlExceptionThrown() throws SQLException {
-        Client client = sampleFemaleClientBuilder().build();
+        Client client = sampleJaneClientBuilder().build();
         manager.createClient(client);
         testExpectedServiceFailureException((clientManager) -> clientManager.deleteClient(client));
     }

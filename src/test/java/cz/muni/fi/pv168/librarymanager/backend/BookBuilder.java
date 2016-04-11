@@ -1,10 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
-
 /**
  *
  * @author skylar
@@ -38,11 +31,11 @@ public class BookBuilder {
     }
 
     public Book build() {
-        Book grave = new Book();
-        grave.setId(id);
-        grave.setAuthor(author);
-        grave.setTitle(title);
-        grave.setYearOfPublication(yearOfPublication);
-        return grave;
+        Book book = new Book();
+        book.setId(id);
+        book.setAuthor(author);
+        book.setTitle(title);
+        book.setYearOfPublication(yearOfPublication);
+        return book;
     }
 }

@@ -14,8 +14,9 @@ import javax.sql.DataSource;
 
 /**
  *
- * @author Josef Pavelec, Faculty of Informatics, Masaryk University
  * @author Diana Vilkolakova
+ * @author Josef Pavelec, Faculty of Informatics, Masaryk University
+ *
  */
 public class ClientManagerImpl implements ClientManager {
     
@@ -36,10 +37,10 @@ public class ClientManagerImpl implements ClientManager {
 
     @Override
     public Client getClient(Long id) {
-        try (
+        try {
                 Connection connection = dataSource.getConnection();
                 PreparedStatement st = connection.prepareStatement(
-                        "SELECT id,name,surname FROM client WHERE id = ?")) {
+                        "SELECT id,name,surname FROM client WHERE id = ?"); 
 
             st.setLong(1, id);
             ResultSet rs = st.executeQuery();
@@ -91,18 +92,18 @@ public class ClientManagerImpl implements ClientManager {
             throw new IllegalEntityException("client id is already set");
         }
 
-        try (
+        try {
                 Connection connection = dataSource.getConnection();
                 PreparedStatement st = connection.prepareStatement(
                         "INSERT INTO CLIENT (name, surname) VALUES (?,?)",
-                        Statement.RETURN_GENERATED_KEYS)) {
+                        Statement.RETURN_GENERATED_KEYS); 
 
             st.setString(1, client.getName());
             st.setString(2, client.getSurname());
             int addedRows = st.executeUpdate();
             if (addedRows != 1) {
                 throw new ServiceFailureException("Internal Error: More rows ("
-                        + addedRows + ") inserted when trying to insert book " + client);
+                        + addedRows + ") inserted when trying to insert client " + client);
             }
 
             ResultSet keyRS = st.getGeneratedKeys();
@@ -152,7 +153,7 @@ public class ClientManagerImpl implements ClientManager {
         }
     }
 
-    private Client resultSetToClient(ResultSet rs) throws SQLException {
+    public static Client resultSetToClient(ResultSet rs) throws SQLException {
         Client client = new Client();
         client.setId(rs.getLong("id"));
         client.setName(rs.getString("name"));

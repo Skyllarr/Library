@@ -14,24 +14,6 @@ public class Rent {
     private LocalDate endDay;
     private Client client;
     private Book book;
-    private Long bookId;
-    private Long clientId;
-
-    public Long getBookId() {
-        return bookId;
-    }
-
-    public void setBookId(Long bookId) {
-        this.bookId = bookId;
-    }
-
-    public Long getClientId() {
-        return clientId;
-    }
-
-    public void setClientId(Long clientId) {
-        this.clientId = clientId;
-    }
 
     public Long getId() {
         return id;

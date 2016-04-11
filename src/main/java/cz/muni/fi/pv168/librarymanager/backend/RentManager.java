@@ -52,5 +52,11 @@ public interface RentManager {
      * @param id rent id
      * @return book with input id or null when book doesn't exist
      */
-    public Rent findRentById(Long id);
+    public Rent getRent(Long id);
+    
+    /**
+     * Method return all rents
+     * @return all rents
+     */
+    public List<Rent> findAllRents();
 }
