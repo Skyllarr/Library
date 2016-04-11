@@ -11,9 +11,10 @@ import static org.mockito.Mockito.*;
 
 
 /**
- * 
- * @author Josef Pavelec, Faculty of Informatics, Masaryk University
+ *
  * @author Diana Vilkolakova
+ * @author Josef Pavelec, Faculty of Informatics, Masaryk University
+ *
  */
 public class ClientManagerImplTest {
     
@@ -189,7 +190,7 @@ public class ClientManagerImplTest {
         expectedException.expect(IllegalEntityException.class);
         manager.updateClient(client);
     }
-    
+        
     @Test
     public void deleteClient() {
         Client client = sampleJaneClientBuilder().build();

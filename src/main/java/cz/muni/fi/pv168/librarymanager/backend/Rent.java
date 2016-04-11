@@ -5,7 +5,9 @@ import java.util.Objects;
 
 /**
  *
+ * @author Diana Vilkolakova
  * @author Josef Pavelec, Faculty of Informatics, Masaryk University
+ *
  */
 public class Rent {
     

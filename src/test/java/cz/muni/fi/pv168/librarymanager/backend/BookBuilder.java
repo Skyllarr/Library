@@ -1,9 +1,12 @@
-/**
- *
- * @author skylar
- */
 package cz.muni.fi.pv168.librarymanager.backend;
 
+
+/**
+ *
+ * @author Diana Vilkolakova
+ * @author Josef Pavelec, Faculty of Informatics, Masaryk University
+ *
+ */
 public class BookBuilder {
     private Long id;
     private String author;

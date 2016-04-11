@@ -18,7 +18,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  *
- * @author diana vilkolakova
+ * @author Diana Vilkolakova
+ * @author Josef Pavelec, Faculty of Informatics, Masaryk University
+ *
  */
 public class RentManagerImplTest {
     private RentManagerImpl manager;

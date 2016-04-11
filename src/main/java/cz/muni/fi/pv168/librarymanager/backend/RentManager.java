@@ -5,7 +5,9 @@ import java.util.List;
 
 /**
  *
+ * @author Diana Vilkolakova
  * @author Josef Pavelec, Faculty of Informatics, Masaryk University
+ *
  */
 public interface RentManager {
     

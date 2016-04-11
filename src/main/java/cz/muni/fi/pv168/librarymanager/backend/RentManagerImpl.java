@@ -1,15 +1,10 @@
 package cz.muni.fi.pv168.librarymanager.backend;
 
-import cz.muni.fi.pv168.librarymanager.common.DBUtils;
-import cz.muni.fi.pv168.librarymanager.common.EntityNotFoundException;
-import cz.muni.fi.pv168.librarymanager.common.IllegalEntityException;
-import cz.muni.fi.pv168.librarymanager.common.ServiceFailureException;
-import cz.muni.fi.pv168.librarymanager.common.ValidationException;
+import cz.muni.fi.pv168.librarymanager.common.*;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Clock;
@@ -22,7 +17,9 @@ import javax.sql.DataSource;
 
 /**
  *
+ * @author Diana Vilkolakova
  * @author Josef Pavelec, Faculty of Informatics, Masaryk University
+ *
  */
 public class RentManagerImpl implements RentManager {
     

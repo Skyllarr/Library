@@ -5,7 +5,9 @@ import java.time.Month;
 
 /**
  *
- * @author skylar
+ * @author Diana Vilkolakova
+ * @author Josef Pavelec, Faculty of Informatics, Masaryk University
+ *
  */
 public class RentBuilder {
     private Long id;
