@@ -24,6 +24,12 @@ public class ClientManagerImpl implements ClientManager {
             ClientManagerImpl.class.getName());
     
     private DataSource dataSource;
+    
+    public ClientManagerImpl() {}
+    
+    public ClientManagerImpl(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
 
     public void setDataSource(DataSource dataSource) {
         this.dataSource = dataSource;
@@ -37,10 +43,10 @@ public class ClientManagerImpl implements ClientManager {
 
     @Override
     public Client getClient(Long id) {
-        try {
-                Connection connection = dataSource.getConnection();
-                PreparedStatement st = connection.prepareStatement(
-                        "SELECT id,name,surname FROM client WHERE id = ?"); 
+        checkDataSource();
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement st = connection.prepareStatement(
+                "SELECT id,name,surname FROM client WHERE id = ?")) {
 
             st.setLong(1, id);
             ResultSet rs = st.executeQuery();
@@ -51,7 +57,8 @@ public class ClientManagerImpl implements ClientManager {
                 if (rs.next()) {
                     throw new ServiceFailureException(
                             "Internal error: More entities with the same id found "
-                            + "(source id: " + id + ", found " + client + " and " + resultSetToClient(rs));
+                            + "(source id: " + id + ", found " + client + 
+                            " and " + resultSetToClient(rs));
                 }
 
                 return client;
@@ -60,43 +67,45 @@ public class ClientManagerImpl implements ClientManager {
             }
 
         } catch (SQLException ex) {
-            throw new ServiceFailureException(
-                    "Error when retrieving client with id " + id, ex);
+            String msg = "Error when retrieving client with id " + id;
+            logger.log(Level.SEVERE, msg, ex);
+            throw new ServiceFailureException(msg, ex); 
         }
     }
 
     @Override
     public List<Client> findAllClients() {
         checkDataSource();
-        Connection conn = null;
-        PreparedStatement st = null;
-        try {
-            conn = dataSource.getConnection();
-            st = conn.prepareStatement(
-                    "SELECT id, surname, name FROM Client");
-            return executeQueryForMultipleClients(st);
+        
+        try (Connection conn = dataSource.getConnection();
+            PreparedStatement st = conn.prepareStatement(
+                "SELECT id, name, surname FROM Client");
+            ResultSet rs = st.executeQuery()) {
+            
+            List<Client> clients = new ArrayList<>();
+            while (rs.next()) {
+                clients.add(resultSetToClient(rs));
+            }
+            return clients;
         } catch (SQLException ex) {
             String msg = "Error when getting all clients from DB";
             logger.log(Level.SEVERE, msg, ex);
             throw new ServiceFailureException(msg, ex);
-        } finally {
-            DBUtils.closeQuietly(conn, st);
-        }          
+        }
     }
 
     @Override
     public void createClient(Client client) throws ServiceFailureException {
-
+        checkDataSource();
         validate(client);
         if (client.getId() != null) {
             throw new IllegalEntityException("client id is already set");
         }
 
-        try {
-                Connection connection = dataSource.getConnection();
-                PreparedStatement st = connection.prepareStatement(
-                        "INSERT INTO CLIENT (name, surname) VALUES (?,?)",
-                        Statement.RETURN_GENERATED_KEYS); 
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement st = connection.prepareStatement(
+                "INSERT INTO CLIENT (name, surname) VALUES (?,?)",
+                        Statement.RETURN_GENERATED_KEYS)) { 
 
             st.setString(1, client.getName());
             st.setString(2, client.getSurname());
@@ -110,7 +119,9 @@ public class ClientManagerImpl implements ClientManager {
             client.setId(getKey(keyRS, client));
 
         } catch (SQLException ex) {
-            throw new ServiceFailureException("Error when inserting book " + client, ex);
+            String msg = "Error when inserting client " + client;
+            logger.log(Level.SEVERE, msg, ex);
+            throw new ServiceFailureException(msg, ex); 
         }
     }
 
@@ -136,19 +147,19 @@ public class ClientManagerImpl implements ClientManager {
         if (keyRS.next()) {
             if (keyRS.getMetaData().getColumnCount() != 1) {
                 throw new ServiceFailureException("Internal Error: Generated key"
-                        + "retriving failed when trying to insert book " + client
+                        + "retriving failed when trying to insert client " + client
                         + " - wrong key fields count: " + keyRS.getMetaData().getColumnCount());
             }
             Long result = keyRS.getLong(1);
             if (keyRS.next()) {
                 throw new ServiceFailureException("Internal Error: Generated key"
-                        + "retriving failed when trying to insert book " + client
+                        + "retriving failed when trying to insert client " + client
                         + " - more keys found");
             }
             return result;
         } else {
             throw new ServiceFailureException("Internal Error: Generated key"
-                    + "retriving failed when trying to insert book " + client
+                    + "retriving failed when trying to insert client " + client
                     + " - no key found");
         }
     }
@@ -163,14 +174,14 @@ public class ClientManagerImpl implements ClientManager {
 
     @Override
     public void updateClient(Client client) throws IllegalEntityException {
+        checkDataSource();
         validate(client);
         if (client.getId() == null) {
             throw new IllegalEntityException("client id is null");
         }
-        try (
-                Connection connection = dataSource.getConnection();
-                PreparedStatement st = connection.prepareStatement(
-                        "UPDATE Client SET name = ?, surname = ? WHERE id = ?")) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement st = connection.prepareStatement(
+                "UPDATE Client SET name = ?, surname = ? WHERE id = ?")) {
 
             st.setString(1, client.getName());
             st.setString(2, client.getSurname());
@@ -183,44 +194,46 @@ public class ClientManagerImpl implements ClientManager {
                 throw new ServiceFailureException("Invalid updated rows count detected (one row should be updated): " + count);
             }
         } catch (SQLException ex) {
-            throw new ServiceFailureException(
-                    "Error when updating book " + client, ex);
+            String msg = "Error when updating client " + client;
+            logger.log(Level.SEVERE, msg, ex);
+            throw new ServiceFailureException(msg, ex); 
         }
     }
 
     @Override
     public void deleteClient(Client client) {
+        checkDataSource();
         if (client == null) {
             throw new IllegalArgumentException("client is null");
         }
         if (client.getId() == null) {
-            throw new IllegalArgumentException("client id is null");
+            throw new IllegalEntityException("client id is null");
         }
-        try (
-                Connection connection = dataSource.getConnection();
-                PreparedStatement st = connection.prepareStatement(
-                        "DELETE FROM client WHERE id = ?")) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement st = connection.prepareStatement(
+                "DELETE FROM client WHERE id = ?")) {
 
             st.setLong(1, client.getId());
 
             int count = st.executeUpdate();
             if (count == 0) {
-                throw new EntityNotFoundException("Client " + client + " was not found in database!");
+                throw new IllegalEntityException("Client " + client + " was not found in database!");
             } else if (count != 1) {
                 throw new ServiceFailureException("Invalid deleted rows count detected (one row should be updated): " + count);
             }
         } catch (SQLException ex) {
-            throw new ServiceFailureException(
-                    "Error when updating book " + client, ex);
+            String msg = "Error when deleting client " + client;
+            logger.log(Level.SEVERE, msg, ex);
+            throw new ServiceFailureException(msg, ex);
         }
     }
 
     @Override
     public List<Client> findClientsByName(String name) {
-        try (
-                Connection connection = dataSource.getConnection();
-                PreparedStatement st = connection.prepareStatement(
-                        "SELECT id, name, surname FROM client WHERE name = ?")) {
+        checkDataSource();
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement st = connection.prepareStatement(
+                "SELECT id, name, surname FROM client WHERE name = ?")) {
 
             st.setString(1, name);
             ResultSet rs = st.executeQuery();
@@ -232,17 +245,18 @@ public class ClientManagerImpl implements ClientManager {
             return result;
 
         } catch (SQLException ex) {
-            throw new ServiceFailureException(
-                    "Error when retrieving all clients", ex);
+            String msg = "Error when retrieving all clients";
+            logger.log(Level.SEVERE, msg, ex);
+            throw new ServiceFailureException(msg, ex);
         }
     }
 
     @Override
     public List<Client> findClientsBySurname(String surname) {
-        try (
-                Connection connection = dataSource.getConnection();
-                PreparedStatement st = connection.prepareStatement(
-                        "SELECT id,name,surname FROM client WHERE surname = ?")) {
+        checkDataSource();
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement st = connection.prepareStatement(
+                "SELECT id,name,surname FROM client WHERE surname = ?")) {
 
             st.setString(1, surname);
             ResultSet rs = st.executeQuery();
@@ -254,40 +268,10 @@ public class ClientManagerImpl implements ClientManager {
             return result;
 
         } catch (SQLException ex) {
-            throw new ServiceFailureException(
-                    "Error when retrieving all clients", ex);
-        }
-    }
-
-    
-    static List<Client> executeQueryForMultipleClients(PreparedStatement st) throws SQLException {
-        ResultSet rs = st.executeQuery();
-        List<Client> result = new ArrayList<Client>();
-        while (rs.next()) {
-            result.add(rowToClient(rs));
-        }
-        return result;
-    }
-    
-    static Client executeQueryForSingleClient(PreparedStatement st) throws SQLException, ServiceFailureException {
-        ResultSet rs = st.executeQuery();
-        if (rs.next()) {
-            Client result = rowToClient(rs);                
-            if (rs.next()) {
-                throw new ServiceFailureException(
-                        "Internal integrity error: more clients with the same id found!");
-            }
-            return result;
-        } else {
-            return null;
+            String msg = "Error when retrieving clients with surname "+surname;
+            logger.log(Level.SEVERE, msg, ex);
+            throw new ServiceFailureException(msg, ex);
         }
     }
     
-    private static Client rowToClient(ResultSet rs) throws SQLException {
-        Client result = new Client();
-        result.setId(rs.getLong("id"));
-        result.setName(rs.getString("name"));
-        result.setSurname(rs.getString("surname"));
-        return result;
-    }
 }

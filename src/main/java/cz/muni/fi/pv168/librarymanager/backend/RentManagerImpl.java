@@ -23,19 +23,19 @@ import javax.sql.DataSource;
  */
 public class RentManagerImpl implements RentManager {
     
-    /* ??? We use it for extract client and book entity from DB (see 
-           rowToRent method) */
-    /*private ClientManagerImpl clientManager = new ClientManagerImpl();
-    private BookManagerImpl bookManager = new BookManagerImpl();*/
-    
     private static final Logger logger = Logger.getLogger(
             RentManagerImpl.class.getName());
     
     private DataSource dataSource;
     
-    private final Clock clock;
+    //private final Clock clock;
+    private Clock clock;
     
     public RentManagerImpl(Clock clock) {
+        this.clock = clock;
+    }
+    
+    protected void setClock(Clock clock) {
         this.clock = clock;
     }
 
@@ -88,19 +88,19 @@ public class RentManagerImpl implements RentManager {
         if (keyRS.next()) {
             if (keyRS.getMetaData().getColumnCount() != 1) {
                 throw new ServiceFailureException("Internal Error: Generated key"
-                        + "retriving failed when trying to insert book " + rent
+                        + "retriving failed when trying to insert rent " + rent
                         + " - wrong key fields count: " + keyRS.getMetaData().getColumnCount());
             }
             Long result = keyRS.getLong(1);
             if (keyRS.next()) {
                 throw new ServiceFailureException("Internal Error: Generated key"
-                        + "retriving failed when trying to insert book " + rent
+                        + "retriving failed when trying to insert rent " + rent
                         + " - more keys found");
             }
             return result;
         } else {
             throw new ServiceFailureException("Internal Error: Generated key"
-                    + "retriving failed when trying to insert book " + rent
+                    + "retriving failed when trying to insert rent " + rent
                     + " - no key found");
         }
     }
@@ -114,36 +114,31 @@ public class RentManagerImpl implements RentManager {
             throw new IllegalEntityException("rent id is already set");
         }
               
-        Connection connection = null;
-        PreparedStatement st = null;
-        try {
-            connection = dataSource.getConnection();
-            checkIfBookIsNotRent(connection, rent.getBook());
-
-            st = connection.prepareStatement(
+        try (Connection connection = dataSource.getConnection()) {
+            checkIfBookIsNotRent(connection, rent.getBook()); 
+            try (PreparedStatement st = connection.prepareStatement(
                     "INSERT INTO Rent (clientid,bookid,startday,endday) VALUES (?,?,?,?)",
-                    Statement.RETURN_GENERATED_KEYS);
-            st.setLong(1, rent.getClient().getId());
-            st.setLong(2, rent.getBook().getId());
-            st.setDate(3, toSqlDate(rent.getStartDay()));
-            st.setDate(4, toSqlDate(rent.getEndDay()));
+                    Statement.RETURN_GENERATED_KEYS)) {
+                
+                st.setLong(1, rent.getClient().getId());
+                st.setLong(2, rent.getBook().getId());
+                st.setDate(3, toSqlDate(rent.getStartDay()));
+                st.setDate(4, toSqlDate(rent.getEndDay()));
 
-            int addedRows = st.executeUpdate();
-            if (addedRows != 1) {
-                throw new ServiceFailureException("Internal Error: More rows ("
-                        + addedRows + ") inserted when trying to insert rent " + rent);
+                int addedRows = st.executeUpdate();
+                if (addedRows != 1) {
+                    throw new ServiceFailureException("Internal Error: More rows ("
+                            + addedRows + ") inserted when trying to insert rent " + rent);
+                }
+
+                ResultSet keyRS = st.getGeneratedKeys();
+                rent.setId(getKey(keyRS,rent));
             }
-
-            ResultSet keyRS = st.getGeneratedKeys();
-            rent.setId(getKey(keyRS,rent));
         } catch (SQLException ex) {
-            //String msg = "Error when inserting rent into db";
-            //logger.log(Level.SEVERE, msg, ex);
-            throw new ServiceFailureException("Error when inserting rent into db", ex);
-        } /*finally {
-            DBUtils.doRollbackQuietly(connection);
-            DBUtils.closeQuietly(connection, st);
-        }*/
+            String msg = "Error when inserting rent into db";
+            logger.log(Level.SEVERE, msg, ex);
+            throw new ServiceFailureException(msg, ex);
+        } 
     }
 
     @Override
@@ -155,14 +150,10 @@ public class RentManagerImpl implements RentManager {
             throw new IllegalEntityException("rent id is null");
         }
         
-        Connection conn = null;
-        PreparedStatement updateSt = null;
-        try {
-            conn = dataSource.getConnection();
-            conn.setAutoCommit(false);
-
-            updateSt = conn.prepareStatement(
-                    "UPDATE Rent SET bookid = ?, startday = ?, endday = ? WHERE id = ?");
+        try (Connection conn = dataSource.getConnection();
+            PreparedStatement updateSt = conn.prepareStatement(
+                "UPDATE Rent SET bookid = ?, startday = ?, endday = ? WHERE id = ?")) {
+            
             updateSt.setLong(1, rent.getBook().getId());
             updateSt.setDate(2, toSqlDate(rent.getStartDay()));
             updateSt.setDate(3, toSqlDate(rent.getEndDay()));
@@ -172,33 +163,27 @@ public class RentManagerImpl implements RentManager {
             if (count == 0) {
                 throw new IllegalEntityException("Rent " + rent + " was not found in database!");
             } else if (count != 1) {
-                throw new ServiceFailureException("Invalid updated rows count detected (one row should be updated): " + count);
+                throw new ServiceFailureException("Invalid updated rows count "
+                        + "detected (one row should be updated): " + count);
             }
         } catch (SQLException ex) {
             String msg = "Error when updating rent in db";
             logger.log(Level.SEVERE, msg, ex);
             throw new ServiceFailureException(msg, ex);
-        } finally {
-            DBUtils.doRollbackQuietly(conn);
-            DBUtils.closeQuietly(conn, updateSt);
-        }
+        } 
     }
 
     @Override
     public void deleteRent(Rent rent) {
         checkDataSource();
         validate(rent);
-        
         if (rent.getId() == null) {
             throw new IllegalEntityException("rent id is null");
         }
         
-        Connection conn = null;
-        // ??? difference between try ( and try {
-        try (
-                Connection connection = dataSource.getConnection();
-                PreparedStatement st = connection.prepareStatement(
-                        "DELETE FROM rent WHERE id = ?")) {
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement st = connection.prepareStatement(
+                "DELETE FROM rent WHERE id = ?")) {
 
             st.setLong(1, rent.getId());
 
@@ -206,20 +191,25 @@ public class RentManagerImpl implements RentManager {
             if (count == 0) {
                 throw new IllegalEntityException("Rent " + rent + " was not found in database!");
             } else if (count != 1) {
-                throw new ServiceFailureException("Invalid deleted rows count detected (one row should be updated): " + count);
+                throw new ServiceFailureException("Invalid deleted rows count "
+                        + "detected (one row should be updated): " + count);
             }
         } catch (SQLException ex) {
-            throw new ServiceFailureException(
-                    "Error when updating book " + rent, ex);
+            String msg = "Error when deleting rent in db";
+            logger.log(Level.SEVERE, msg, ex);
+            throw new ServiceFailureException(msg, ex);
         }
     }
 
     @Override
     public List<Rent> findDelayedReturns() {
-        try (
-                Connection connection = dataSource.getConnection();
-                PreparedStatement st = connection.prepareStatement(
-                        "SELECT id,clientid,bookid,startday,endday FROM rent WHERE endday > ?")) {
+        checkDataSource();
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement st = connection.prepareStatement(
+                "SELECT rent.id, client.id, client.name, client.surname, "+
+                "book.id, book.title, book.author, book.yearofpublication, "+
+                "startday, endday  FROM rent INNER JOIN client ON rent.clientid"+
+                "=client.id INNER JOIN book ON rent.bookid=book.id WHERE rent.endday < ?")) {
 
             LocalDate today = LocalDate.now(clock);
             st.setDate(1, toSqlDate(today));
@@ -227,13 +217,14 @@ public class RentManagerImpl implements RentManager {
 
             List<Rent> result = new ArrayList<>();
             while (rs.next()) {
-                result.add(rowToRent(rs));
+                result.add(resultSetToRent(rs));
             }
             return result;
 
         } catch (SQLException ex) {
-            throw new ServiceFailureException(
-                    "Error when retrieving delayed books", ex);
+            String msg = "Error when retrieving delayed rents";
+            logger.log(Level.SEVERE, msg, ex);
+            throw new ServiceFailureException(msg, ex);
         }
     }
 
@@ -244,22 +235,20 @@ public class RentManagerImpl implements RentManager {
         if (id == null) {
             throw new IllegalArgumentException("id is null");
         }
-        Connection connection = null;
-        PreparedStatement st = null;
-        try {
-            connection = dataSource.getConnection();
-            st = connection.prepareStatement(
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement st = connection.prepareStatement(
                 "SELECT rent.id, client.id, client.name, client.surname, "+
                 "book.id, book.title, book.author, book.yearofpublication, "+
                 "startday, endday  FROM rent INNER JOIN client ON rent.clientid"+
-                "=client.id INNER JOIN book ON rent.bookid=book.id WHERE client.id=?");
+                "=client.id INNER JOIN book ON rent.bookid=book.id WHERE client.id=?")) {
 
             st.setLong(1, id);
             System.out.println(st);
             return executeQueryForSingleRent(st);
         } catch (SQLException ex) {
-            throw new ServiceFailureException(
-                    "Error when retrieving rent with id " + id, ex);
+            String msg = "Error when retrieving rent with id " + id;
+            logger.log(Level.SEVERE, msg, ex);
+            throw new ServiceFailureException(msg, ex);
         }
     }
     
@@ -269,34 +258,31 @@ public class RentManagerImpl implements RentManager {
         if (book == null) {
             throw new IllegalArgumentException("book is null");
         }
-        Connection connection = null;
-        PreparedStatement st = null;
-        try {
-            connection = dataSource.getConnection();
-            st = connection.prepareStatement(
+
+        try (Connection connection = dataSource.getConnection();
+            PreparedStatement st = connection.prepareStatement(
                         "SELECT client.id,name,surname FROM rent INNER JOIN client "+
-                        "ON rent.clientid=client.id WHERE rent.bookid=?");
+                        "ON rent.clientid=client.id WHERE rent.bookid=?")) {
 
             st.setLong(1, book.getId());
             ResultSet rs = st.executeQuery();
             if (rs.next()) {
-                //Client client = resultSetToClient(rs);
                 Client client = ClientManagerImpl.resultSetToClient(rs);
                 if (rs.next()) {
                     throw new ServiceFailureException(
                             "Internal error: More entities with the same id found "
-                            + "(source id: " + book.getId() + ", found " + client + 
+                            + "(source book id: " + book.getId() + ", found " + client + 
                             " and " + ClientManagerImpl.resultSetToClient(rs));
                 }
-
                 return client;
             } else {
                 return null;
             }
 
         } catch (SQLException ex) {
-            throw new ServiceFailureException(
-                    "Error when retrieving client with id " + book.getId(), ex);
+            String msg = "Error when retrieving client with rent book id " + book.getId();
+            logger.log(Level.SEVERE, msg, ex);
+            throw new ServiceFailureException(msg, ex);
         }
     }
 
@@ -306,72 +292,43 @@ public class RentManagerImpl implements RentManager {
         if (client == null) {
             throw new IllegalArgumentException("client is null");
         }
-        Connection connection = null;
-        PreparedStatement st = null;
-        try {
-                connection = dataSource.getConnection();
-                st = connection.prepareStatement(
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement st = connection.prepareStatement(
                         "SELECT book.id,author,title,yearofpublication "+
                         "FROM rent INNER JOIN book ON rent.bookid=book.id "+
-                        "WHERE clientid = ?");
+                        "WHERE clientid = ?")) {
 
             st.setLong(1, client.getId());
             ResultSet rs = st.executeQuery();
 
             List<Book> result = new ArrayList<>();
             while (rs.next()) {
-                //result.add(resultSetToBook(rs));
                 result.add(BookManagerImpl.resultSetToBook(rs));
             }
             return result;
 
         } catch (SQLException ex) {
-            throw new ServiceFailureException(
-                    "Error when retrieving books by client", ex);
+            String msg = "Error when retrieving books by client " + client;
+            logger.log(Level.SEVERE, msg, ex);
+            throw new ServiceFailureException(msg, ex);
         }
     }
-    
-    /* ??? These two method aren't necessary because of duplicity of code.
-           I made method BookManagerImpl.resultSetToBook() and 
-           ClientManagerImpl.resultSetToClient() public static, but I'm not sure
-           it's good approach
-    private Client resultSetToClient(ResultSet rs) throws SQLException {
-        Client client = new Client();
-        client.setId(rs.getLong("id"));
-        client.setName(rs.getString("name"));
-        client.setSurname(rs.getString("surname"));
-        return client;
-    }
-    
-    private Book resultSetToBook(ResultSet rs) throws SQLException {
-        Book book = new Book();
-        book.setId(rs.getLong("id"));
-        book.setAuthor(rs.getString("author"));
-        book.setTitle(rs.getString("title"));
-        book.setYearOfPublication(rs.getInt("yearofpublication"));
-        return book;
-    }
-    */
     
     private static void checkIfBookIsNotRent(Connection conn, Book book) throws IllegalEntityException, SQLException {
-    PreparedStatement checkSt = null;
-        try {
-            checkSt = conn.prepareStatement(
-                    "SELECT COUNT(bookid) as rentsCount " +
-                    "FROM rent " +
-                    "WHERE bookid = ? ");
-            checkSt.setLong(1, book.getId());
-            ResultSet rs = checkSt.executeQuery();
-            if (rs.next()) {
-                if (rs.getInt("rentsCount")>0) {
-                    throw new IllegalEntityException("Book " + book + " is already rent");
-                }
-            } else {
-                throw new IllegalEntityException("Book " + book + " does not exist in the database");
+        try (PreparedStatement checkSt = conn.prepareStatement(
+                "SELECT COUNT(bookid) as rentsCount " +
+                "FROM rent " +
+                "WHERE bookid = ? ")) {
+                checkSt.setLong(1, book.getId());
+                ResultSet rs = checkSt.executeQuery();
+                if (rs.next()) {
+                    if (rs.getInt("rentsCount")>0) {
+                        throw new IllegalEntityException("Book " + book + " is already rent");
+                    }
+                } else {
+                    throw new IllegalEntityException("Book " + book + " does not exist in the database");
             }
-        } finally {
-            DBUtils.closeQuietly(null, checkSt);
-        }
+        } 
     }
     
     private static Date toSqlDate(LocalDate localDate) {
@@ -382,34 +339,27 @@ public class RentManagerImpl implements RentManager {
         return date == null ? null : date.toLocalDate();
     }
 
-    
-
     @Override
     public List<Rent> findAllRents() {
         checkDataSource();
-        Connection conn = null;
-        PreparedStatement st = null;
-        try {
-            conn = dataSource.getConnection();
-            st = conn.prepareStatement(
-                    "SELECT rent.id, client.id, client.name, client.surname, "+
+        try (Connection conn = dataSource.getConnection();
+            PreparedStatement st = conn.prepareStatement(
+                "SELECT rent.id, client.id, client.name, client.surname, "+
                 "book.id, book.title, book.author, book.yearofpublication, "+
                 "startday, endday  FROM rent INNER JOIN client ON rent.clientid"+
-                "=client.id INNER JOIN book ON rent.bookid=book.id");
+                "=client.id INNER JOIN book ON rent.bookid=book.id")) {
             return executeQueryForMultipleRents(st);
         } catch (SQLException ex) {
-            String msg = "Error when getting all clients from DB";
+            String msg = "Error when getting all rents";
             logger.log(Level.SEVERE, msg, ex);
             throw new ServiceFailureException(msg, ex);
-        } finally {
-            DBUtils.closeQuietly(conn, st);
-        }          
+        }         
     }
     
     private static Rent executeQueryForSingleRent(PreparedStatement st) throws SQLException, ServiceFailureException {
         ResultSet rs = st.executeQuery();
         if (rs.next()) {
-            Rent result = rowToRent(rs);                
+            Rent result = resultSetToRent(rs);                
             if (rs.next()) {
                 throw new ServiceFailureException(
                         "Internal integrity error: more rents with the same id found!");
@@ -422,31 +372,18 @@ public class RentManagerImpl implements RentManager {
     
     private static List<Rent> executeQueryForMultipleRents(PreparedStatement st) throws SQLException {
         ResultSet rs = st.executeQuery();
-        List<Rent> result = new ArrayList<Rent>();
+        List<Rent> result = new ArrayList<>();
         while (rs.next()) {
-            result.add(rowToRent(rs));
+            result.add(resultSetToRent(rs));
         }
         return result;
     }
     
-    private static Rent rowToRent(ResultSet rs) throws SQLException {
+    private static Rent resultSetToRent(ResultSet rs) throws SQLException {
         Rent result = new Rent();
         Client client = new Client();
         Book book = new Book();
         
-        /* ??? Why I can't get values through dot notation 
-        result.setId(rs.getLong("rent.id"));
-        client.setId(rs.getLong("client.id"));
-        client.setName(rs.getString("client.name"));
-        client.setSurname(rs.getString("client.surname"));
-        book.setId(rs.getLong("book.id"));
-        book.setTitle(rs.getString("book.title"));
-        book.setAuthor(rs.getString("book.author"));
-        book.setYearOfPublication(rs.getInt("book.yearofpublication"));
-        result.setStartDay(toLocalDate(rs.getDate("startday")));
-        result.setEndDay(toLocalDate(rs.getDate("endday")));*/
-        
-        // Numbering of columns starts at 1
         result.setId(rs.getLong(1));
         client.setId(rs.getLong(2));
         client.setName(rs.getString(3));

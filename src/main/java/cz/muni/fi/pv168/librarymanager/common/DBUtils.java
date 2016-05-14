@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package cz.muni.fi.pv168.librarymanager.common;
 
 import java.io.IOException;
@@ -18,7 +13,8 @@ import javax.sql.DataSource;
 
 /**
  *
- * @author skylar
+ * @author Petr Adámek
+ *
  */
 public class DBUtils {
     private static final Logger logger = Logger.getLogger(

@@ -1,5 +1,7 @@
 package cz.muni.fi.pv168.librarymanager.backend;
 
+import java.util.Objects;
+
 /**
  *
  * @author Diana Vilkolakova
@@ -35,4 +37,44 @@ public class Client {
     public void setSurname(String surname) {
         this.surname = surname;
     }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 79 * hash + Objects.hashCode(this.id);
+        hash = 79 * hash + Objects.hashCode(this.name);
+        hash = 79 * hash + Objects.hashCode(this.surname);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Client other = (Client) obj;
+        if (!Objects.equals(this.name, other.name)) {
+            return false;
+        }
+        if (!Objects.equals(this.surname, other.surname)) {
+            return false;
+        }
+        if (!Objects.equals(this.id, other.id)) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "Client{" + "id=" + id + ", name=" + name + ", surname=" + surname + '}';
+    }
+    
+    
 }

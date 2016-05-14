@@ -3,14 +3,21 @@ package cz.muni.fi.pv168.librarymanager.backend;
 import java.sql.SQLException;
 import javax.sql.DataSource;
 import cz.muni.fi.pv168.librarymanager.common.DBUtils;
-import cz.muni.fi.pv168.librarymanager.common.EntityNotFoundException;
-import java.util.function.Consumer;
+import cz.muni.fi.pv168.librarymanager.common.IllegalEntityException;
+import cz.muni.fi.pv168.librarymanager.common.ServiceFailureException;
+import cz.muni.fi.pv168.librarymanager.common.ValidationException;
+import java.time.Clock;
+import java.time.LocalDateTime;
+import static java.time.Month.MARCH;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import org.apache.derby.jdbc.EmbeddedDataSource;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import static org.mockito.Mockito.*;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -24,6 +31,9 @@ public class BookManagerImplTest {
 
     private BookManagerImpl manager;
     private DataSource dataSource;
+    
+    private final static ZonedDateTime NOW
+            = LocalDateTime.of(2016, MARCH, 13, 22, 00).atZone(ZoneId.of("UTC"));
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -35,11 +45,15 @@ public class BookManagerImplTest {
         return ds;
     }
 
+    private static Clock prepareClockMock(ZonedDateTime now) {
+        return Clock.fixed(now.toInstant(), now.getZone());
+    }
+    
     @Before
     public void setUp() throws SQLException {
         dataSource = prepareDataSource();
         DBUtils.executeSqlScript(dataSource, BookManager.class.getResource("createTables.sql"));
-        manager = new BookManagerImpl();
+        manager = new BookManagerImpl(prepareClockMock(NOW));
         manager.setDataSource(dataSource);
     }
 
@@ -81,17 +95,41 @@ public class BookManagerImplTest {
     public void getAllBooks() {
         assertThat(manager.findAllBooks()).isEmpty();
 
-        Book g1 = newBook("jean", "Good title", 1992);
-        Book g2 = newBook("jeanA", "Haha", 1995);
+        Book bookPoe = samplePoeBookBuilder().build();
+        Book bookHem = sampleHemBookBuilder().build();
 
-        manager.createBook(g1);
-        manager.createBook(g2);
+        manager.createBook(bookPoe);
+        manager.createBook(bookHem);
 
         assertThat(manager.findAllBooks())
                 .usingFieldByFieldElementComparator()
-                .containsOnly(g1, g2);
+                .containsOnly(bookPoe, bookHem);
+    }
+    
+    @Test
+    public void findBooksByAuthor() {
+        Book bookPoe = samplePoeBookBuilder().build();
+        assertThat(manager.findBooksByAuthor(bookPoe.getAuthor())).isEmpty();
+        
+        manager.createBook(bookPoe);
+        
+        assertThat(manager.findBooksByAuthor(bookPoe.getAuthor()))
+                .usingFieldByFieldElementComparator()
+                .containsOnly(bookPoe);
     }
 
+    @Test
+    public void findBooksByTitle() {
+        Book bookPoe = samplePoeBookBuilder().build();
+        assertThat(manager.findBooksByTitle(bookPoe.getTitle())).isEmpty();
+        
+        manager.createBook(bookPoe);
+        
+        assertThat(manager.findBooksByTitle(bookPoe.getTitle()))
+                .usingFieldByFieldElementComparator()
+                .containsOnly(bookPoe);
+    }
+    
     @Test(expected = IllegalArgumentException.class)
     public void createNullBook() {
         manager.createBook(null);
@@ -99,40 +137,51 @@ public class BookManagerImplTest {
 
     @Test
     public void createBookWithExistingId() {
-        Book book = newBook("jean", "Good title", 1992);
-        book.setId(1l);
-        expectedException.expect(IllegalArgumentException.class);
+        Book book = samplePoeBookBuilder().id(1L).build();
+        expectedException.expect(IllegalEntityException.class);
+        manager.createBook(book);
+    }
+    
+    @Test
+    public void createBookWithEmptyTitle() {
+        Book book = sampleHemBookBuilder().title("").build();
+        assertThatThrownBy(() -> manager.createBook(book))
+                .isInstanceOf(ValidationException.class);
+    }
+    
+    @Test
+    public void createBookWithNullTitle() {
+        Book book = sampleHemBookBuilder().title(null).build();
+        expectedException.expect(ValidationException.class);
         manager.createBook(book);
     }
 
     @Test
     public void createBookWithEmptyAuthor() {
-        Book book = newBook("", "Good title", 1992);
+        Book book = sampleHemBookBuilder().author("").build();
         assertThatThrownBy(() -> manager.createBook(book))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(ValidationException.class);
+    }
+    
+    @Test
+    public void createBookWithNullAuthor() {
+        Book book = sampleHemBookBuilder().author(null).build();
+        expectedException.expect(ValidationException.class);
+        manager.createBook(book);
     }
 
     @Test
     public void createBookWithNegativeYear() {
-        Book book = newBook("jean", "Good title", -5);
-        expectedException.expect(IllegalArgumentException.class);
+        Book book = samplePoeBookBuilder().yearOfPublication(-1).build();
+        expectedException.expect(ValidationException.class);
         manager.createBook(book);
     }
-
-    private void testUpdate(Consumer<Book> updateOperation) {
-        Book sourceBook = newBook("jean", "Good title", 1992);
-        Book anotherBook = newBook("jeanA", "Good title2", 1995);
-        manager.createBook(sourceBook);
-        manager.createBook(anotherBook);
-
-        updateOperation.accept(sourceBook);
-        manager.updateBook(sourceBook);
-
-        assertThat(manager.getBook(sourceBook.getId()))
-                .isEqualToComparingFieldByField(sourceBook);
-        // Check if updates didn't affected other records
-        assertThat(manager.getBook(anotherBook.getId()))
-                .isEqualToComparingFieldByField(anotherBook);
+    
+    @Test
+    public void createBookWithYearInFuture() {
+        Book book = samplePoeBookBuilder().yearOfPublication(2017).build();
+        expectedException.expect(ValidationException.class);
+        manager.createBook(book);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -142,55 +191,91 @@ public class BookManagerImplTest {
 
     @Test
     public void updateBookWithNullId() {
-        Book book = newBook("jean", "Good title", 1992);
+        Book book = sampleHemBookBuilder().build();
         manager.createBook(book);
         book.setId(null);
-        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expect(IllegalEntityException.class);
         manager.updateBook(book);
     }
 
     @Test
     public void updateBookWithNonExistingId() {
-        Book book = newBook("jean", "Good title", 1992);
+        Book book = sampleHemBookBuilder().build();
         manager.createBook(book);
         book.setId(book.getId() + 1);
-        expectedException.expect(EntityNotFoundException.class);
+        expectedException.expect(IllegalEntityException.class);
         manager.updateBook(book);
     }
 
     @Test
     public void updateBookWithEmptyTitle() {
-        Book book = newBook("jean", "title", 1992);
+        Book book = sampleHemBookBuilder().build();
         manager.createBook(book);
         book.setTitle("");
-        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expect(ValidationException.class);
+        manager.updateBook(book);
+    }
+    
+    @Test
+    public void updateBookWithNullTitle() {
+        Book book = sampleHemBookBuilder().build();
+        manager.createBook(book);
+        book.setTitle(null);
+        expectedException.expect(ValidationException.class);
         manager.updateBook(book);
     }
 
     @Test
-    public void updateBookWithNegativeyearofpublication() {
-        Book book = newBook("jean", "Good title", 1992);
+    public void updateBookWithEmptyAuthor() {
+        Book book = sampleHemBookBuilder().build();
+        manager.createBook(book);
+        book.setAuthor("");
+        expectedException.expect(ValidationException.class);
+        manager.updateBook(book);
+    }
+    
+    @Test
+    public void updateBookWithNullAuthor() {
+        Book book = sampleHemBookBuilder().build();
+        manager.createBook(book);
+        book.setAuthor(null);
+        expectedException.expect(ValidationException.class);
+        manager.updateBook(book);
+    }
+    
+    @Test
+    public void updateBookWithNegativeYearOfPublication() {
+        Book book = sampleHemBookBuilder().build();
         manager.createBook(book);
         book.setYearOfPublication(-1);
-        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expect(ValidationException.class);
+        manager.updateBook(book);
+    }
+    
+    @Test
+    public void updateBookWithYearOfPublicationInFuture() {
+        Book book = sampleHemBookBuilder().build();
+        manager.createBook(book);
+        book.setYearOfPublication(2017);
+        expectedException.expect(ValidationException.class);
         manager.updateBook(book);
     }
 
     @Test
     public void deleteBook() {
 
-        Book g1 = newBook("jean", "Good title", 1992);
-        Book g2 = newBook("detto", "Good title2", 1997);
-        manager.createBook(g1);
-        manager.createBook(g2);
+        Book book1 = sampleHemBookBuilder().build();
+        Book book2 = samplePoeBookBuilder().build();
+        manager.createBook(book1);
+        manager.createBook(book2);
 
-        assertThat(manager.getBook(g1.getId())).isNotNull();
-        assertThat(manager.getBook(g2.getId())).isNotNull();
+        assertThat(manager.getBook(book1.getId())).isNotNull();
+        assertThat(manager.getBook(book2.getId())).isNotNull();
 
-        manager.deleteBook(g1);
+        manager.deleteBook(book1);
 
-        assertThat(manager.getBook(g1.getId())).isNull();
-        assertThat(manager.getBook(g2.getId())).isNotNull();
+        assertThat(manager.getBook(book1.getId())).isNull();
+        assertThat(manager.getBook(book2.getId())).isNotNull();
 
     }
 
@@ -201,25 +286,89 @@ public class BookManagerImplTest {
 
     @Test
     public void deleteBookWithNullId() {
-        Book book = newBook("jean", "Good title", 1992);
+        Book book = sampleHemBookBuilder().build();
         book.setId(null);
-        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expect(IllegalEntityException.class);
         manager.deleteBook(book);
     }
 
     @Test
     public void deleteBookWithNonExistingId() {
-        Book book = newBook("jean", "Good title", 1992);
+        Book book = sampleHemBookBuilder().build();
         book.setId(1L);
-        expectedException.expect(EntityNotFoundException.class);
+        expectedException.expect(IllegalEntityException.class);
         manager.deleteBook(book);
     }
 
-    private static Book newBook(String author, String title, int yearofpublication) {
-        Book book = new Book();
-        book.setAuthor(author);
-        book.setTitle(title);
-        book.setYearOfPublication(yearofpublication);
-        return book;
+    
+    @FunctionalInterface
+    private static interface Operation<T> {
+        void callOn(T subjectOfOperation);
+    }
+    
+    private void testExpectedServiceFailureException(Operation<BookManager> operation) throws SQLException {
+        SQLException sqlException = new SQLException();
+        DataSource failingDataSource = mock(DataSource.class);
+        when(failingDataSource.getConnection()).thenThrow(sqlException);
+        manager.setDataSource(failingDataSource);
+        assertThatThrownBy(() -> operation.callOn(manager))
+                .isInstanceOf(ServiceFailureException.class)
+                .hasCause(sqlException);
+    }
+    
+    @Test
+    public void createBookWithSqlExceptionThrown() throws SQLException {
+        SQLException sqlException = new SQLException();
+        DataSource failingDataSource = mock(DataSource.class);
+        when(failingDataSource.getConnection()).thenThrow(sqlException);
+        manager.setDataSource(failingDataSource);
+
+        Book book = sampleHemBookBuilder().build();
+
+        assertThatThrownBy(() -> manager.createBook(book))
+                .isInstanceOf(ServiceFailureException.class)
+                .hasCause(sqlException);
+    }
+
+    @Test
+    public void updateBookWithSqlExceptionThrown() throws SQLException {
+        Book book = sampleHemBookBuilder().build();
+        manager.createBook(book);
+        testExpectedServiceFailureException((bookManager) -> bookManager.updateBook(book));
+    }
+
+    @Test
+    public void getBookWithSqlExceptionThrown() throws SQLException {
+        Book book = sampleHemBookBuilder().build();
+        manager.createBook(book);
+        testExpectedServiceFailureException((bookManager) -> bookManager.getBook(book.getId()));
+    }
+
+    @Test
+    public void deleteBookWithSqlExceptionThrown() throws SQLException {
+        Book book = sampleHemBookBuilder().build();
+        manager.createBook(book);
+        testExpectedServiceFailureException((bookManager) -> bookManager.deleteBook(book));
+    }
+
+    @Test
+    public void findAllBooksWithSqlExceptionThrown() throws SQLException {
+        testExpectedServiceFailureException((bookManager) -> bookManager.findAllBooks());
+    }
+    
+    @Test
+    public void findBooksByTitleWithSqlExceptionThrown() throws SQLException {
+        Book book = sampleHemBookBuilder().build();
+        manager.createBook(book);
+        testExpectedServiceFailureException((bookManager) -> 
+                bookManager.findBooksByTitle(book.getTitle()));
+    }
+    
+    @Test
+    public void findBooksByAuthorWithSqlExceptionThrown() throws SQLException {
+        Book book = sampleHemBookBuilder().build();
+        manager.createBook(book);
+        testExpectedServiceFailureException((bookManager) -> 
+                bookManager.findBooksByAuthor(book.getAuthor()));
     }
 }

@@ -1,13 +1,13 @@
 ----------------------------------------------------------------
-Tue Mar 22 17:11:37 CET 2016:
-Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance a816c00e-0153-9f18-8356-000002a0af10 
-on database directory memory:/home/skylar/NetBeansProjects/Library/bookmgr-test with class loader sun.misc.Launcher$AppClassLoader@6bc7c054 
-Loaded from file:/home/skylar/.m2/repository/org/apache/derby/derby/10.12.1.1/derby-10.12.1.1.jar
+Sat May 14 22:04:59 CEST 2016:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance a816c00e-0154-b0df-35e4-00000677ae20 
+on database directory memory:/home/pepa/data/prog/java/sem/Library/librarymgr-test with class loader sun.misc.Launcher$AppClassLoader@6bc7c054 
+Loaded from file:/home/pepa/.m2/repository/org/apache/derby/derby/10.12.1.1/derby-10.12.1.1.jar
 java.vendor=Oracle Corporation
-java.runtime.version=1.8.0_74-b02
-user.dir=/home/skylar/NetBeansProjects/Library
+java.runtime.version=1.8.0_91-b14
+user.dir=/home/pepa/data/prog/java/sem/Library
 os.name=Linux
 os.arch=amd64
-os.version=3.19.0-56-generic
+os.version=3.19.0-59-generic
 derby.system.home=null
 Database Class Loader started - derby.database.classpath=''

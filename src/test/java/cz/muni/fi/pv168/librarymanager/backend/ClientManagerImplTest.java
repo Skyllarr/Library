@@ -26,7 +26,6 @@ public class ClientManagerImplTest {
     
     private static DataSource prepareDataSource() throws SQLException {
         EmbeddedDataSource ds = new EmbeddedDataSource();
-        //we will use in memory database
         ds.setDatabaseName("memory:librarymgr-test");
         ds.setCreateDatabase("create");
         return ds;
@@ -183,14 +182,7 @@ public class ClientManagerImplTest {
         expectedException.expect(IllegalEntityException.class);
         manager.updateClient(client);
     }
-    
-    @Test
-    public void updateClientWithExistingId() {
-        Client client = sampleJaneClientBuilder().id(1L).build();
-        expectedException.expect(IllegalEntityException.class);
-        manager.updateClient(client);
-    }
-        
+           
     @Test
     public void deleteClient() {
         Client client = sampleJaneClientBuilder().build();
@@ -213,9 +205,16 @@ public class ClientManagerImplTest {
     }
     
     @Test
-    public void deleteNonExistingClient() {
-        Client client = samplePhilipClientBuilder().id(1L).build();
-        expectedException.expect(EntityNotFoundException.class);
+    public void deleteClientWithNonExistingId() {
+        Client client = samplePhilipClientBuilder().id(10L).build();
+        expectedException.expect(IllegalEntityException.class);
+        manager.deleteClient(client);
+    }
+    
+    @Test
+    public void deleteClientWithNullId() {
+        Client client = sampleJaneClientBuilder().id(null).build();
+        expectedException.expect(IllegalEntityException.class);
         manager.deleteClient(client);
     }
     
@@ -272,6 +271,20 @@ public class ClientManagerImplTest {
                 .isInstanceOf(ServiceFailureException.class)
                 .hasCause(sqlException);
     }
+    
+    @Test
+    public void createClientWithSqlExceptionThrown() throws SQLException {
+        SQLException sqlException = new SQLException();
+        DataSource failingDataSource = mock(DataSource.class);
+        when(failingDataSource.getConnection()).thenThrow(sqlException);
+        manager.setDataSource(failingDataSource);
+
+        Client client = sampleJaneClientBuilder().build();
+
+        assertThatThrownBy(() -> manager.createClient(client))
+                .isInstanceOf(ServiceFailureException.class)
+                .hasCause(sqlException);
+    }
 
     @Test
     public void updateClientWithSqlExceptionThrown() throws SQLException {
@@ -295,8 +308,24 @@ public class ClientManagerImplTest {
     }
 
     @Test
-    public void findAllBodiesWithSqlExceptionThrown() throws SQLException {
+    public void findAllClientsWithSqlExceptionThrown() throws SQLException {
         testExpectedServiceFailureException((clientManager) -> clientManager.findAllClients());
+    }
+    
+    @Test
+    public void findClientsByNameWithSqlExceptionThrown() throws SQLException {
+        Client client = sampleJaneClientBuilder().build();
+        manager.createClient(client);
+        testExpectedServiceFailureException((clientManager) -> 
+                clientManager.findClientsByName(client.getName()));
+    }
+    
+    @Test
+    public void findClientsBySurnameWithSqlExceptionThrown() throws SQLException {
+        Client client = sampleJaneClientBuilder().build();
+        manager.createClient(client);
+        testExpectedServiceFailureException((clientManager) -> 
+                clientManager.findClientsByName(client.getSurname()));
     }
     
     

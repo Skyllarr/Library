@@ -8,9 +8,6 @@
             <goals>
                 <goal>install</goal>
             </goals>
-            <properties>
-                <skipTests>true</skipTests>
-            </properties>
         </action>
         <action>
             <actionName>clean</actionName>
@@ -20,9 +17,6 @@
             <goals>
                 <goal>clean</goal>
             </goals>
-            <properties>
-                <skipTests>true</skipTests>
-            </properties>
         </action>
         <action>
             <actionName>build-with-dependencies</actionName>
@@ -33,9 +27,6 @@
             <goals>
                 <goal>install</goal>
             </goals>
-            <properties>
-                <skipTests>true</skipTests>
-            </properties>
         </action>
         <action>
             <actionName>rebuild</actionName>
@@ -46,8 +37,5 @@
                 <goal>clean</goal>
                 <goal>install</goal>
             </goals>
-            <properties>
-                <skipTests>true</skipTests>
-            </properties>
         </action>
     </actions>

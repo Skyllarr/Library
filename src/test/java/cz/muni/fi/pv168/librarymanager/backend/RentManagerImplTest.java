@@ -3,7 +3,6 @@ package cz.muni.fi.pv168.librarymanager.backend;
 import cz.muni.fi.pv168.librarymanager.common.*;
 import java.sql.SQLException;
 import java.time.Clock;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -13,7 +12,8 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 import static java.time.Month.*;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 
 /**
@@ -30,6 +30,8 @@ public class RentManagerImplTest {
     private DataSource dataSource;
     private final static ZonedDateTime NOW
             = LocalDateTime.of(2016, APRIL, 7, 20, 00).atZone(ZoneId.of("UTC"));
+    private final static ZonedDateTime NOW_PLUS_2_MONTHS
+            = LocalDateTime.of(2016, JUNE, 7, 20, 00).atZone(ZoneId.of("UTC"));
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -46,13 +48,20 @@ public class RentManagerImplTest {
         manager.setDataSource(dataSource);      
         clientManager = new ClientManagerImpl();
         clientManager.setDataSource(dataSource); 
-        bookManager = new BookManagerImpl();
+        bookManager = new BookManagerImpl(prepareClockMock(NOW));
         bookManager.setDataSource(dataSource);
         prepareTestData();        
     }
     
     private Book bookSea, bookMorella, bookWild, bookSvejk, bookWithNullId, bookNotInDB;
     private Client clientBruce, clientSteve, clientDave, clientWithNullId, clientNotInDB;
+    
+    private static DataSource prepareDataSource() throws SQLException {
+        EmbeddedDataSource ds = new EmbeddedDataSource();
+        ds.setDatabaseName("memory:librarymgr-test");
+        ds.setCreateDatabase("create");
+        return ds;
+    }
     
     private void prepareTestData() {
         clientBruce = new ClientBuilder().id(null).name("Bruce").surname("Dickinson").build();
@@ -79,8 +88,6 @@ public class RentManagerImplTest {
         
         clientWithNullId = new ClientBuilder().id(null).name("Client with null id").surname("Lexa").build();
         clientWithNullId = new ClientBuilder().id(clientBruce.getId()+100).name("Not in DB").surname("Fantom").build();
-//        assertThat(clientManager.getClient(clientNotInDB.getId())).isNull();
-        
     }
     
     private RentBuilder sampleBruceRentsSea() {
@@ -114,16 +121,15 @@ public class RentManagerImplTest {
         
         Long rentBruceId = rentBruce.getId();
         assertThat(rentBruceId).isNotNull();
-        
-        /* ??? isEqualToComparingFieldByField method doesn't allow "deep comparsion"?
         assertThat(manager.getRent(rentBruceId))
+                .isEqualToComparingFieldByField(rentBruce)
                 .isNotSameAs(rentBruce);
-                .isEqualToComparingFieldByField(rentBruce);*/
+                
                 
                 
         Rent expectedRent = manager.getRent(rentBruceId);
         assertThat(expectedRent).isNotSameAs(rentBruce);
-        assertThat(expectedRent.getId()).isEqualTo(expectedRent.getId());
+        assertThat(expectedRent.getId()).isEqualTo(rentBruce.getId());
         assertThat(expectedRent.getClient())
                 .isEqualToComparingFieldByField(rentBruce.getClient());
         assertThat(expectedRent.getBook())
@@ -131,13 +137,15 @@ public class RentManagerImplTest {
         assertThat(expectedRent.getStartDay()).isEqualTo(rentBruce.getStartDay());
         assertThat(expectedRent.getEndDay()).isEqualTo(rentBruce.getEndDay());
 
-        /* similar problem as above
         assertThat(manager.findAllRents())
                 .isNotEmpty()
                 .usingFieldByFieldElementComparator()
-                .containsOnly(expectedRent); */
+                .containsOnly(expectedRent); 
         
-        assertThat(manager.findAllRents()).hasSize(1);
+        assertThat(manager.findClientByRentBook(bookSvejk))
+                .isNull();
+        assertThat(manager.findRentBooksByClient(clientDave))
+                .isEmpty();
     }
     
     @Test(expected = IllegalArgumentException.class)
@@ -148,6 +156,16 @@ public class RentManagerImplTest {
     @Test(expected = IllegalEntityException.class)
     public void createRentWithExistingId() {
         manager.createRent(sampleBruceRentsSea().id(1L).build());
+    }
+    
+    @Test(expected = ValidationException.class)
+    public void createRentWithNullClient() {
+        manager.createRent(sampleSteveRentsMorella().client(null).build());
+    }
+    
+    @Test(expected = ValidationException.class)
+    public void createRentWithNullBook() {
+        manager.createRent(sampleBruceRentsSea().book(null).build());
     }
     
     @Test
@@ -164,11 +182,12 @@ public class RentManagerImplTest {
     public void createRentWithEndDayBeforeStartDay() {
         Rent rent = sampleBruceRentsSea()
                         .startDay(2016, APRIL, 20)
-                        .endDay(2016, APRIL, 8)
+                        .endDay(2016, APRIL, 19)
                         .build();
         expectedException.expect(ValidationException.class);
         manager.createRent(rent);
     }
+    
     
     @Test
     public void createRentWithStartDayInPast() {
@@ -217,6 +236,30 @@ public class RentManagerImplTest {
         manager.updateRent(rent);
     }
     
+    @Test(expected = ValidationException.class)
+    public void updateRentWithNullClient() {
+        manager.updateRent(sampleSteveRentsMorella().client(null).build());
+    }
+    
+    @Test(expected = ValidationException.class)
+    public void updateRentWithNullBook() {
+        manager.updateRent(sampleBruceRentsSea().book(null).build());
+    }
+    
+    @Test
+    public void deleteRent() {
+        Rent steveRent = sampleSteveRentsMorella().build();
+        Rent bruceRent = sampleBruceRentsSea().build();
+        manager.createRent(bruceRent);
+        manager.createRent(steveRent);
+        
+        manager.deleteRent(steveRent);
+        
+        assertThat(manager.findAllRents())
+                .isNotEmpty()
+                .containsOnly(bruceRent);
+    }
+    
     @Test(expected = IllegalArgumentException.class)
     public void deleteNullRent() {
         manager.deleteRent(null);
@@ -242,18 +285,14 @@ public class RentManagerImplTest {
         
         Client foundClient = manager.findClientByRentBook(bruceRent.getBook());
         assertThat(foundClient)
-                        .isEqualToComparingFieldByField(bruceRent.getClient());
+                        .isEqualToComparingFieldByField(bruceRent.getClient())
+                        .isNotNull();
     }
     
     @Test(expected = IllegalArgumentException.class)
     public void findClientByNullBook() {
         manager.findClientByRentBook(null);
     }
-    
-    /* ??? When we cannot find client expect an exception or null 
-    @Test(expected = IllegalArgumentException.class)
-    public void findClientByNonExistingBook() {
-        manager.findClientByRentBook(bookNotInDB);*/
     
     @Test
     public void findClientByNonExistingBook() {
@@ -294,20 +333,95 @@ public class RentManagerImplTest {
         
         assertThat(manager.findAllRents())
                     .isNotEmpty()
-                    /* ??? Why it doesn't work
                     .containsOnly(bruceRentsSea, bruceRentsSvejk, steveRentsMorella, steveRentsWild);
-                    */
-                    .hasSize(4);
+    }
+    
+    @Test
+    public void findDelayed() {
+        Rent bruceRent = sampleBruceRentsSea().build();
+        manager.createRent(bruceRent);
+        manager.setClock(prepareClockMock(NOW_PLUS_2_MONTHS));
+        
+        assertThat(manager.findDelayedReturns())
+                .contains(bruceRent);
+        
+    }
+    
+    @FunctionalInterface
+    private static interface Operation<T> {
+        void callOn(T subjectOfOperation);
+    }
+    
+    private void testExpectedServiceFailureException(Operation<RentManager> operation) throws SQLException {
+        SQLException sqlException = new SQLException();
+        DataSource failingDataSource = mock(DataSource.class);
+        when(failingDataSource.getConnection()).thenThrow(sqlException);
+        manager.setDataSource(failingDataSource);
+        assertThatThrownBy(() -> operation.callOn(manager))
+                .isInstanceOf(ServiceFailureException.class)
+                .hasCause(sqlException);
+    }
+    
+    @Test
+    public void createRentWithSqlExceptionThrown() throws SQLException {
+        SQLException sqlException = new SQLException();
+        DataSource failingDataSource = mock(DataSource.class);
+        when(failingDataSource.getConnection()).thenThrow(sqlException);
+        manager.setDataSource(failingDataSource);
+
+        Rent rent = sampleBruceRentsSea().build();
+
+        assertThatThrownBy(() -> manager.createRent(rent))
+                .isInstanceOf(ServiceFailureException.class)
+                .hasCause(sqlException);
+    }
+
+    @Test
+    public void updateRentWithSqlExceptionThrown() throws SQLException {
+        Rent rent = sampleBruceRentsSea().build();
+        manager.createRent(rent);
+        testExpectedServiceFailureException((rentManager) -> rentManager.updateRent(rent));
+    }
+
+    @Test
+    public void getRentWithSqlExceptionThrown() throws SQLException {
+        Rent rent = sampleBruceRentsSea().build();
+        manager.createRent(rent);
+        testExpectedServiceFailureException((rentManager) -> rentManager.getRent(rent.getId()));
+    }
+
+    @Test
+    public void deleteRentWithSqlExceptionThrown() throws SQLException {
+        Rent rent = sampleBruceRentsSea().build();
+        manager.createRent(rent);
+        testExpectedServiceFailureException((rentManager) -> rentManager.deleteRent(rent));
+    }
+
+    @Test
+    public void findAllRentsWithSqlExceptionThrown() throws SQLException {
+        testExpectedServiceFailureException((rentManager) -> rentManager.findAllRents());
+    }
+    
+    @Test
+    public void findClientByBookWithSqlExceptionThrown() throws SQLException {
+        testExpectedServiceFailureException((rentManager) -> 
+                rentManager.findClientByRentBook(bookSea));
+    }
+    
+    @Test
+    public void findBooksByClientWithSqlExceptionThrown() throws SQLException {
+        testExpectedServiceFailureException((rentManager) -> 
+                rentManager.findRentBooksByClient(clientDave));
+    }
+    
+    @Test
+    public void findDelayedRentsWithSqlExceptionThrown() throws SQLException {
+        testExpectedServiceFailureException((rentManager) -> 
+                rentManager.findDelayedReturns());
     }
             
     
-    private static DataSource prepareDataSource() throws SQLException {
-        EmbeddedDataSource ds = new EmbeddedDataSource();
-        //we will use in memory database
-        ds.setDatabaseName("memory:librarymgr-test");
-        ds.setCreateDatabase("create");
-        return ds;
-    }
+    
     
    
 }

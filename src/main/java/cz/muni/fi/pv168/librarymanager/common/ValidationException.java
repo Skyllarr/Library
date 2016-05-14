@@ -4,6 +4,7 @@ package cz.muni.fi.pv168.librarymanager.common;
  * This exception is thrown when validation of entity fails.
  * 
  * @author Petr Adámek
+ * 
  */
 public class ValidationException extends RuntimeException {
 

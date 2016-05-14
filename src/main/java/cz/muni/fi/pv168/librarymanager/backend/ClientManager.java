@@ -28,8 +28,20 @@ public interface ClientManager {
      */
     public void deleteClient(Client client);
     
+    /**
+     * Method find all clients with surname
+     * @param surname surname to find
+     * @return clients with input surname as list
+     */
     public List<Client> findClientsBySurname(String surname);
-    public List<Client> findClientsByName(String surname);
+    
+    /**
+     * Method find all clients with first name
+     * @param name surname to find
+     * @return clients with input first name as list
+     */
+    public List<Client> findClientsByName(String name);
+    
     /**
      * Method list all existing clients
      * @return all clients as list of Client
