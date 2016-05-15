@@ -82,6 +82,9 @@ public class RentManagerImpl implements RentManager {
         if (rent.getStartDay() != null && rent.getEndDay() != null && rent.getEndDay().isBefore(rent.getStartDay())) {
             throw new ValidationException("rent end is before rent start");
         }
+        if (rent.getStartDay() != null && rent.getEndDay() != null && rent.getEndDay().equals(rent.getStartDay())) {
+            throw new ValidationException("rent start and rent end are same day");
+        }
     }
 
     private Long getKey(ResultSet keyRS, Rent rent) throws ServiceFailureException, SQLException {
@@ -115,7 +118,7 @@ public class RentManagerImpl implements RentManager {
         }
               
         try (Connection connection = dataSource.getConnection()) {
-            checkIfBookIsNotRent(connection, rent.getBook()); 
+            checkIfBookIsNotRent(connection, rent); 
             try (PreparedStatement st = connection.prepareStatement(
                     "INSERT INTO Rent (clientid,bookid,startday,endday) VALUES (?,?,?,?)",
                     Statement.RETURN_GENERATED_KEYS)) {
@@ -314,21 +317,30 @@ public class RentManagerImpl implements RentManager {
         }
     }
     
-    private static void checkIfBookIsNotRent(Connection conn, Book book) throws IllegalEntityException, SQLException {
+    private static void checkIfBookIsNotRent(Connection conn, Rent rent) throws IllegalEntityException, SQLException {
         try (PreparedStatement checkSt = conn.prepareStatement(
-                "SELECT COUNT(bookid) as rentsCount " +
+                /*"SELECT COUNT(bookid) as rentsCount " +
                 "FROM rent " +
-                "WHERE bookid = ? ")) {
-                checkSt.setLong(1, book.getId());
+                "WHERE bookid = ? AND " +
+                "(startday > ? OR endday < ? )")) {*/
+            "SELECT rent.id, client.id, client.name, client.surname, "+
+            "book.id, book.title, book.author, book.yearofpublication, "+
+            "startday, endday  FROM rent INNER JOIN client ON rent.clientid"+
+            "=client.id INNER JOIN book ON rent.bookid=book.id WHERE rent.bookid=?" +
+            " AND (startday <= ? AND endday >= ?)"
+            )) {
+                checkSt.setLong(1, rent.getBook().getId());
+                checkSt.setDate(2, toSqlDate(rent.getEndDay()));
+                checkSt.setDate(3, toSqlDate(rent.getStartDay()));
+                
                 ResultSet rs = checkSt.executeQuery();
+                
                 if (rs.next()) {
-                    if (rs.getInt("rentsCount")>0) {
-                        throw new IllegalEntityException("Book " + book + " is already rent");
-                    }
-                } else {
-                    throw new IllegalEntityException("Book " + book + " does not exist in the database");
-            }
-        } 
+                    Rent existingRent = resultSetToRent(rs);
+                        throw new IllegalEntityException("Book " + rent.getBook() +
+                                " is already rent " + existingRent);
+                }
+            } 
     }
     
     private static Date toSqlDate(LocalDate localDate) {

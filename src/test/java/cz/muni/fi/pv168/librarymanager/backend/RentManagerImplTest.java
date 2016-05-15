@@ -188,6 +188,15 @@ public class RentManagerImplTest {
         manager.createRent(rent);
     }
     
+    @Test
+    public void createRentWithSameStartDayAndEndDay() {
+        Rent rent = sampleBruceRentsSea()
+                        .startDay(2016, APRIL, 20)
+                        .endDay(2016, APRIL, 20)
+                        .build();
+        expectedException.expect(ValidationException.class);
+        manager.createRent(rent);
+    }
     
     @Test
     public void createRentWithStartDayInPast() {
@@ -209,14 +218,56 @@ public class RentManagerImplTest {
     
     @Test
     public void createRentWithAlreadyRentedBook() {
-        Rent goodRent = sampleBruceRentsSea().build();
+        Rent goodRent = sampleBruceRentsSea()
+                            .startDay(2016, MAY, 8)
+                            .endDay(2016, MAY, 20)
+                            .build();
         manager.createRent(goodRent);
         Rent rentWithRentedBook = sampleSteveRentsMorella()
                                     .book(goodRent.getBook())
+                                    .startDay(2016, MAY, 15)
+                                    .endDay(2016, MAY, 19)
                                     .build();
                 
         expectedException.expect(IllegalEntityException.class);
         manager.createRent(rentWithRentedBook);
+    }
+    
+    @Test
+    public void createRentsOfSameBookInTwoDifferentTimeIntervals() {
+        Rent firstRent = sampleBruceRentsSea()
+                            .startDay(2016, APRIL, 8)
+                            .endDay(2016, APRIL, 20)
+                            .build();
+        Rent secondRent = sampleBruceRentsSea()
+                            .startDay(2016, APRIL, 21)
+                            .endDay(2016, APRIL, 30)
+                            .build();
+        
+        manager.createRent(firstRent);
+        manager.createRent(secondRent);
+        
+        assertThat(manager.findAllRents())
+                .isNotEmpty()
+                .usingFieldByFieldElementComparator()
+                .containsOnly(firstRent, secondRent);
+    }
+    
+    @Test
+    public void createRentWithSameBookWithStartDayEqualToEnddayOtherRent() {
+        Rent firstRent = sampleBruceRentsSea()
+                            .startDay(2016, MAY, 13)
+                            .endDay(2016, MAY, 23)
+                            .build();
+        Rent secondRent = sampleBruceRentsSea()
+                            .startDay(2016, MAY, 23)
+                            .endDay(2016, JUNE, 1)
+                            .build();
+        
+        manager.createRent(firstRent);
+        expectedException.expect(IllegalEntityException.class);
+        manager.createRent(secondRent);
+        
     }
     
     @Test(expected = IllegalArgumentException.class)

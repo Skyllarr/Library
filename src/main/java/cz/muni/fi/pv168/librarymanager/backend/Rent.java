@@ -97,6 +97,12 @@ public class Rent {
         }
         return true;
     }
+
+    @Override
+    public String toString() {
+        return "Rent{" + "id=" + id + ", startDay=" + startDay + ", endDay=" + endDay + ", client=" + client + ", book=" + book + '}';
+    }
+
     
 
 }
