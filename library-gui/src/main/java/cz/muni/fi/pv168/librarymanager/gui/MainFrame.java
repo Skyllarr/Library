@@ -1,5 +1,6 @@
 package cz.muni.fi.pv168.librarymanager.gui;
 
+import cz.muni.fi.pv168.librarymanager.backend.Book;
 import cz.muni.fi.pv168.librarymanager.backend.Client;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -144,6 +145,7 @@ public class MainFrame extends javax.swing.JFrame {
 
         jTabbedPane1.addTab("Clients", jScrollPane1);
 
+        jTable2.setModel(new BookTableModel(dataSource));
         jScrollPane2.setViewportView(jTable2);
 
         jTabbedPane1.addTab("Books", jScrollPane2);
@@ -216,7 +218,7 @@ public class MainFrame extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jTabbedPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE)
+            .addComponent(jTabbedPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 800, Short.MAX_VALUE)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -229,7 +231,7 @@ public class MainFrame extends javax.swing.JFrame {
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(jTabbedPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 340, Short.MAX_VALUE)
+                .addComponent(jTabbedPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 350, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -262,11 +264,11 @@ public class MainFrame extends javax.swing.JFrame {
                 jDialog.setTitle(bundle.getString("addClientTitle"));
                 jDialog.getContentPane().add(new ClientWindow("add",null,bundle,jTable1));
                 break;
-           /* case 1: //customer pane
-                jDialog.setTitle(texts.getString("addCustomer"));
-                jDialog.getContentPane().add(new CustomerPopUp("add",null,texts,jTable2));
+            case 1: //customer pane
+                jDialog.setTitle(bundle.getString("addBookTitle"));
+                jDialog.getContentPane().add(new BookWindow("add",null,bundle,jTable2));
                 break;
-            case 2: //lease pane
+            /*case 2: //lease pane
                 jDialog.setTitle(texts.getString("addLease"));
                 jDialog.getContentPane().add(new LeasePopUp("add",null,texts,jTable3,dataSource));
                 break;                        */
@@ -290,7 +292,7 @@ public class MainFrame extends javax.swing.JFrame {
                 int customerSelectedRow = jTable2.getSelectedRow();
                 if(customerSelectedRow == -1) //no customer selected
                     return; 
-                //newEditJDialog(1,customerSelectedRow);
+                editJDialog(1,customerSelectedRow);
                 break;
             case 2: //rent panel
                 int leaseSelectedRow = jTable3.getSelectedRow();
@@ -311,13 +313,13 @@ public class MainFrame extends javax.swing.JFrame {
                         ((ClientTableModel)jTable1.getModel()).getSelectedClient(rowIndex),
                         bundle,jTable1));
                 break;
-           /* case 1: //customer pane
-                jDialog.setTitle(texts.getString("editCustomer"));
-                jDialog.getContentPane().add(new CustomerPopUp("edit",
-                        ((CustomerTableModel)jTable2.getModel()).getSelectedCustomer(rowIndex),
-                        texts,jTable2));
+            case 1: //customer pane
+                jDialog.setTitle(bundle.getString("editBook"));
+                jDialog.getContentPane().add(new BookWindow("edit",
+                        ((BookTableModel)jTable2.getModel()).getSelectedBook(rowIndex),
+                        bundle,jTable2));
                 break;
-            case 2: //lease pane
+            /*case 2: //lease pane
                 jDialog.setTitle(texts.getString("editLease"));                                                
                 jDialog.getContentPane().add(new LeasePopUp("edit",
                         ((LeaseTableModel)jTable3.getModel()).getSelectedLease(rowIndex),
@@ -355,24 +357,21 @@ public class MainFrame extends javax.swing.JFrame {
                     
                 }
                 break;
-            /*case 1: //customer pane
+            case 1: //customer pane
                 choice = JOptionPane.showOptionDialog(null,
-                        texts.getString("deleteCustomerMessage"),
-                        texts.getString("delete"),
+                        bundle.getString("deleteBookMessage"),
+                        bundle.getString("deleteBook"),
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.WARNING_MESSAGE,
                         null,
                         options,
                         options[1]);
                 if(choice==0){
-                    //delete from list of customers in LeaseTableModel
-                    Customer cus = ((CustomerTableModel)jTable2.getModel()).getSelectedCustomer(jTable2.getSelectedRow());
-                    ((LeaseTableModel)jTable3.getModel()).deleteCustomerWithId(cus.getId());
-                    //delete from database
-                    ((CustomerTableModel)jTable2.getModel()).deleteCustomer(jTable2.getSelectedRow());
+                    Book book = ((BookTableModel)jTable2.getModel()).getSelectedBook(jTable2.getSelectedRow());
+                    ((BookTableModel)jTable2.getModel()).deleteBook(jTable2.getSelectedRow());
                 }
                 break;
-            case 2: //lease pane
+            /*case 2: //lease pane
                 row = jTable3.getSelectedRow();
                 Lease l = ((LeaseTableModel)jTable3.getModel()).getSelectedLease(row);
                 choice = JOptionPane.showOptionDialog(null,

@@ -2,6 +2,7 @@ package cz.muni.fi.pv168.librarymanager.backend;
 
 import cz.muni.fi.pv168.librarymanager.common.ServiceFailureException;
 import java.util.List;
+import javax.sql.DataSource;
 
 /**
  *
@@ -56,4 +57,5 @@ public interface BookManager {
      */
     public List<Book> findBooksByTitle(String title);
 
+    public void setDataSource(DataSource dataSource);
 }
