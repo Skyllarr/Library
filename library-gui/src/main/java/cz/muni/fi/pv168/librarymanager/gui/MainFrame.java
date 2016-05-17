@@ -140,11 +140,13 @@ public class MainFrame extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setPreferredSize(new java.awt.Dimension(800, 400));
 
+        jTable1.setAutoCreateRowSorter(true);
         jTable1.setModel(new ClientTableModel(dataSource));
         jScrollPane1.setViewportView(jTable1);
 
         jTabbedPane1.addTab("Clients", jScrollPane1);
 
+        jTable2.setAutoCreateRowSorter(true);
         jTable2.setModel(new BookTableModel(dataSource));
         jScrollPane2.setViewportView(jTable2);
 
