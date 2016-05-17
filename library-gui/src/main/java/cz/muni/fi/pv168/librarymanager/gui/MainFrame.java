@@ -27,10 +27,10 @@ import org.apache.commons.dbcp2.BasicDataSource;
  */
 public class MainFrame extends javax.swing.JFrame {
 
-//    private final ResourceBundle bundle = ResourceBundle.getBundle("bundle");
+    private final ResourceBundle bundle = ResourceBundle.getBundle("Bundle");
     private DataSource dataSource;
 
-    private final ResourceBundle bundle = null;
+//    private final ResourceBundle bundle = null;
 
     public MainFrame() {
         DataSourceSwingWorker dataSourceSwingWorker = new DataSourceSwingWorker();
@@ -259,7 +259,7 @@ public class MainFrame extends javax.swing.JFrame {
         switch(tabbedPaneIndex) {
             case 0: //car pane
                 //jDialog.setTitle(texts.getString("addCar"));
-                jDialog.setTitle("Add a new client");
+                jDialog.setTitle(bundle.getString("addClientTitle"));
                 jDialog.getContentPane().add(new ClientWindow("add",null,bundle,jTable1));
                 break;
            /* case 1: //customer pane
@@ -306,7 +306,7 @@ public class MainFrame extends javax.swing.JFrame {
         switch(tabbedPaneIndex){
             case 0: //car pane
                 //jDialog.setTitle(texts.getString("editCar"));
-                jDialog.setTitle("Edit client");
+                jDialog.setTitle(bundle.getString("editClient"));
                 jDialog.getContentPane().add(new ClientWindow("edit",
                         ((ClientTableModel)jTable1.getModel()).getSelectedClient(rowIndex),
                         bundle,jTable1));
@@ -338,10 +338,8 @@ public class MainFrame extends javax.swing.JFrame {
         switch(jTabbedPane1.getSelectedIndex()){
             case 0: //client panel
                 choice = JOptionPane.showOptionDialog(null,
-                        //texts.getString("deleteCarMessage"),
-                        //texts.getString("delete"),
-                        "Delete selected client",
-                        "Are you sure to delete selected client?",
+                        bundle.getString("deleteClientMessage"),
+                        bundle.getString("deleteClient"),
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.WARNING_MESSAGE,
                         null,

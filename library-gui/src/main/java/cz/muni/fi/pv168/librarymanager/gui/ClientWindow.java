@@ -29,12 +29,10 @@ public class ClientWindow extends javax.swing.JPanel {
         initComponents();
         switch(action){
             case "add":
-                jLabelClientWindow.setText("Add a new client");
-                //jLabelClientWindow.setText(texts.getString("addCustomer"));
+                jLabelClientWindow.setText(bundle.getString("newClient"));
                 break;
             case "edit":
-                jLabelClientWindow.setText("Edit selected client");
-                //jLabel1.setText(texts.getString("editCustomer"));
+                jLabelClientWindow.setText(bundle.getString("editClient"));
                 setTextsFromClients(client);
                 break;
             /*case "filter": 
@@ -53,8 +51,8 @@ public class ClientWindow extends javax.swing.JPanel {
         client = new Client();
         List<String> incorrectInputs = checkInputs();
         if(!incorrectInputs.isEmpty()){
-            JOptionPane.showMessageDialog(null, "Fill up all fields correctly" +": "+
-                            incorrectInputs.toString(),"Incorrect input",
+            JOptionPane.showMessageDialog(null, bundle.getString("fillUp") +": "+
+                            incorrectInputs.toString(),bundle.getString("incorrectInput"),
                     JOptionPane.DEFAULT_OPTION);
             return;
         }
@@ -70,8 +68,8 @@ public class ClientWindow extends javax.swing.JPanel {
     private void editClient() {
         List<String> incorrectInputs = checkInputs();
         if(!incorrectInputs.isEmpty()){
-            JOptionPane.showMessageDialog(null, "Fill up all fields correctly" +": "+
-                            incorrectInputs.toString(),"Incorrect input",
+            JOptionPane.showMessageDialog(null, bundle.getString("fillUp") +": "+
+                            incorrectInputs.toString(),bundle.getString("incorrectInput"),
                     JOptionPane.DEFAULT_OPTION);
             return;
         }
