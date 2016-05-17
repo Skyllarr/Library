@@ -201,6 +201,11 @@ public class MainFrame extends javax.swing.JFrame {
         jMenu2.add(jMenuItem4);
 
         jMenuItem5.setText("Delete selected");
+        jMenuItem5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem5ActionPerformed(evt);
+            }
+        });
         jMenu2.add(jMenuItem5);
 
         jMenuBar1.add(jMenu2);
@@ -325,6 +330,66 @@ public class MainFrame extends javax.swing.JFrame {
         jDialog.setResizable(false);
         jDialog.setVisible(true);
     }
+    
+    private void deleteActionPerformed(java.awt.event.ActionEvent evt) {
+        //String[] options = new String[]{texts.getString("ok"),texts.getString("cancel")}; 
+        String[] options = new String[]{"Ok","Cancel"};
+        int row, choice;
+        switch(jTabbedPane1.getSelectedIndex()){
+            case 0: //client panel
+                choice = JOptionPane.showOptionDialog(null,
+                        //texts.getString("deleteCarMessage"),
+                        //texts.getString("delete"),
+                        "Delete selected client",
+                        "Are you sure to delete selected client?",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE,
+                        null,
+                        options,
+                        options[1]);
+                if(choice==0){
+                    //delete from list of clients in clientTableModel
+                    Client client = ((ClientTableModel)jTable1.getModel()).getSelectedClient(jTable1.getSelectedRow());
+                    ((ClientTableModel)jTable1.getModel()).deleteClient(jTable1.getSelectedRow());
+                    //add delete all rents wit client
+                    //((LeaseTableModel)jTable3.getModel()).deleteCarWithId(c.getId());
+                    //delete from database
+                    
+                }
+                break;
+            /*case 1: //customer pane
+                choice = JOptionPane.showOptionDialog(null,
+                        texts.getString("deleteCustomerMessage"),
+                        texts.getString("delete"),
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE,
+                        null,
+                        options,
+                        options[1]);
+                if(choice==0){
+                    //delete from list of customers in LeaseTableModel
+                    Customer cus = ((CustomerTableModel)jTable2.getModel()).getSelectedCustomer(jTable2.getSelectedRow());
+                    ((LeaseTableModel)jTable3.getModel()).deleteCustomerWithId(cus.getId());
+                    //delete from database
+                    ((CustomerTableModel)jTable2.getModel()).deleteCustomer(jTable2.getSelectedRow());
+                }
+                break;
+            case 2: //lease pane
+                row = jTable3.getSelectedRow();
+                Lease l = ((LeaseTableModel)jTable3.getModel()).getSelectedLease(row);
+                choice = JOptionPane.showOptionDialog(null,
+                        texts.getString("deleteLeaseMessage"),
+                        texts.getString("delete"),
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE,
+                        null,
+                        options,
+                        options[1]);
+                if(choice==0)
+                    ((LeaseTableModel)jTable3.getModel()).deleteLease(jTable3.getSelectedRow());
+                break;*/
+        }
+    }
 
 
     private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
@@ -342,6 +407,10 @@ public class MainFrame extends javax.swing.JFrame {
     private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
         editActionPerformed(evt);
     }//GEN-LAST:event_jMenuItem4ActionPerformed
+
+    private void jMenuItem5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem5ActionPerformed
+        deleteActionPerformed(evt);
+    }//GEN-LAST:event_jMenuItem5ActionPerformed
 
     /**
      * @param args the command line arguments

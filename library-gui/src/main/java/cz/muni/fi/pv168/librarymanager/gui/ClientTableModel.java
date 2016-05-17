@@ -64,6 +64,24 @@ public class ClientTableModel extends AbstractTableModel {
         };
         worker.execute();
     }
+    
+    public void deleteClient(int row){
+        SwingWorker<Void,Void> worker;
+        worker = new SwingWorker<Void, Void>() {
+            
+            @Override
+            protected Void doInBackground() throws Exception {
+                clientManager.deleteClient(clients.get(row));
+                return null;
+            }
+            @Override
+            protected void done() {
+                clients.remove(row);
+                fireTableDataChanged();
+            }
+        };
+        worker.execute();
+    }
 
     @Override
     public int getRowCount() {
