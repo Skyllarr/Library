@@ -1,6 +1,7 @@
 package cz.muni.fi.pv168.librarymanager.backend;
 
 import java.util.List;
+import javax.sql.DataSource;
 
 
 /**
@@ -61,4 +62,6 @@ public interface RentManager {
      * @return all rents
      */
     public List<Rent> findAllRents();
+    
+    public void setDataSource(DataSource dataSource);
 }

@@ -2,6 +2,7 @@ package cz.muni.fi.pv168.librarymanager.gui;
 
 import cz.muni.fi.pv168.librarymanager.backend.Book;
 import cz.muni.fi.pv168.librarymanager.backend.Client;
+import cz.muni.fi.pv168.librarymanager.backend.Rent;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -16,11 +17,15 @@ import java.util.concurrent.ExecutionException;
 import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.PatternSyntaxException;
 import javax.sql.DataSource;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.ListSelectionModel;
+import javax.swing.RowFilter;
 import javax.swing.SwingWorker;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
 import org.apache.commons.dbcp2.BasicDataSource;
 
 /**
@@ -32,7 +37,6 @@ public class MainFrame extends javax.swing.JFrame {
     private DataSource dataSource;
 
 //    private final ResourceBundle bundle = null;
-
     public MainFrame() {
         DataSourceSwingWorker dataSourceSwingWorker = new DataSourceSwingWorker();
         dataSourceSwingWorker.execute();
@@ -81,14 +85,14 @@ public class MainFrame extends javax.swing.JFrame {
         ds.setUrl(dbconf.getProperty("jdbc.url"));
         ds.setUsername(dbconf.getProperty("jdbc.user"));
         ds.setPassword(dbconf.getProperty("jdbc.password"));
-        
+
         try (Connection con = ds.getConnection()) {
             DatabaseMetaData dbmd = con.getMetaData();
             ResultSet rs = dbmd.getTables(null, null, "BOOK", null);
             if (!rs.next()) {
                 StringBuilder sb = new StringBuilder("");
-                for (String line : Files.readAllLines(Paths.get("src", "main", 
-                    "resources", "createTables.sql"))) {
+                for (String line : Files.readAllLines(Paths.get("src", "main",
+                        "resources", "createTables.sql"))) {
                     if (line.trim().isEmpty()) {
                         continue;
                     }
@@ -102,13 +106,12 @@ public class MainFrame extends javax.swing.JFrame {
                     }
                 }
             }
-        } catch (SQLException|IOException ex) {
+        } catch (SQLException | IOException ex) {
             Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
         }
         return ds;
     }
 
-    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -138,7 +141,12 @@ public class MainFrame extends javax.swing.JFrame {
         jMenuItem5 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setPreferredSize(new java.awt.Dimension(800, 400));
+
+        jTabbedPane1.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                jTabbedPane1StateChanged(evt);
+            }
+        });
 
         jTable1.setAutoCreateRowSorter(true);
         jTable1.setModel(new ClientTableModel(dataSource));
@@ -152,6 +160,7 @@ public class MainFrame extends javax.swing.JFrame {
 
         jTabbedPane1.addTab("Books", jScrollPane2);
 
+        jTable3.setModel(new RentTableModel(dataSource));
         jScrollPane3.setViewportView(jTable3);
 
         jTabbedPane1.addTab("Rents", jScrollPane3);
@@ -166,6 +175,22 @@ public class MainFrame extends javax.swing.JFrame {
         jButtonFilter.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonFilterActionPerformed(evt);
+            }
+        });
+
+        jTextField1.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                jTextField1FocusGained(evt);
+            }
+        });
+        jTextField1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField1ActionPerformed(evt);
+            }
+        });
+        jTextField1.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
+            public void propertyChange(java.beans.PropertyChangeEvent evt) {
+                jTextField1PropertyChange(evt);
             }
         });
 
@@ -245,8 +270,8 @@ public class MainFrame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
-        switch(jTabbedPane1.getSelectedIndex()){
-            case 0: 
+        switch (jTabbedPane1.getSelectedIndex()) {
+            case 0:
                 addJDialog(0);
                 break;
             case 1:
@@ -258,22 +283,21 @@ public class MainFrame extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_jMenuItem3ActionPerformed
 
-    private void addJDialog(int tabbedPaneIndex) { //0=car,1=customer,2=lease
+    private void addJDialog(int tabbedPaneIndex) { 
         JDialog jDialog = new JDialog(this, true);
-        switch(tabbedPaneIndex) {
-            case 0: //car pane
-                //jDialog.setTitle(texts.getString("addCar"));
+        switch (tabbedPaneIndex) {
+            case 0: 
                 jDialog.setTitle(bundle.getString("addClientTitle"));
-                jDialog.getContentPane().add(new ClientWindow("add",null,bundle,jTable1));
+                jDialog.getContentPane().add(new ClientWindow("add", null, bundle, jTable1));
                 break;
-            case 1: //customer pane
+            case 1: 
                 jDialog.setTitle(bundle.getString("addBookTitle"));
-                jDialog.getContentPane().add(new BookWindow("add",null,bundle,jTable2));
+                jDialog.getContentPane().add(new BookWindow("add", null, bundle, jTable2)); 
                 break;
-            /*case 2: //lease pane
-                jDialog.setTitle(texts.getString("addLease"));
-                jDialog.getContentPane().add(new LeasePopUp("add",null,texts,jTable3,dataSource));
-                break;                        */
+            case 2: 
+                jDialog.setTitle(bundle.getString("addRentTitle"));
+                jDialog.getContentPane().add(new RentWindow("add",null,bundle,jTable3));
+                break;                        
         }
 
         jDialog.pack();
@@ -281,66 +305,73 @@ public class MainFrame extends javax.swing.JFrame {
         jDialog.setResizable(false);
         jDialog.setVisible(true);
     }
-    
-    private void editActionPerformed(java.awt.event.ActionEvent evt) {                                         
-        switch(jTabbedPane1.getSelectedIndex()){
+
+    private void editActionPerformed(java.awt.event.ActionEvent evt) {
+        switch (jTabbedPane1.getSelectedIndex()) {
             case 0: //client panel
-                int carSelectedRow = jTable1.getSelectedRow();
-                if(carSelectedRow == -1) //no client selected
-                    return;                
-                editJDialog(0,carSelectedRow);
+                int clientSelectedRow = jTable1.getSelectedRow();
+                if (clientSelectedRow == -1) //no client selected
+                {
+                    return;
+                }
+                editJDialog(0, clientSelectedRow);
                 break;
             case 1: //book panel              
                 int customerSelectedRow = jTable2.getSelectedRow();
-                if(customerSelectedRow == -1) //no customer selected
-                    return; 
-                editJDialog(1,customerSelectedRow);
+                if (customerSelectedRow == -1) //no customer selected
+                {
+                    return;
+                }
+                editJDialog(1, customerSelectedRow);
                 break;
             case 2: //rent panel
-                int leaseSelectedRow = jTable3.getSelectedRow();
-                if(leaseSelectedRow == -1) //no lease selected
+                int rentSelectedRow = jTable3.getSelectedRow();
+                if (rentSelectedRow == -1) //no lease selected
+                {
                     return;
+                }
+                editJDialog(2, rentSelectedRow);
                 //newEditJDialog(2,leaseSelectedRow);
                 break;
         }
     }
-    
+
     private void editJDialog(int tabbedPaneIndex, int rowIndex) {
-        JDialog jDialog = new JDialog(this,true);
-        switch(tabbedPaneIndex){
+        JDialog jDialog = new JDialog(this, true);
+        switch (tabbedPaneIndex) {
             case 0: //car pane
                 //jDialog.setTitle(texts.getString("editCar"));
                 jDialog.setTitle(bundle.getString("editClient"));
                 jDialog.getContentPane().add(new ClientWindow("edit",
-                        ((ClientTableModel)jTable1.getModel()).getSelectedClient(rowIndex),
-                        bundle,jTable1));
+                        ((ClientTableModel) jTable1.getModel()).getSelectedClient(rowIndex),
+                        bundle, jTable1));
                 break;
             case 1: //customer pane
                 jDialog.setTitle(bundle.getString("editBook"));
                 jDialog.getContentPane().add(new BookWindow("edit",
-                        ((BookTableModel)jTable2.getModel()).getSelectedBook(rowIndex),
-                        bundle,jTable2));
+                        ((BookTableModel) jTable2.getModel()).getSelectedBook(rowIndex),
+                        bundle, jTable2));
                 break;
-            /*case 2: //lease pane
-                jDialog.setTitle(texts.getString("editLease"));                                                
-                jDialog.getContentPane().add(new LeasePopUp("edit",
-                        ((LeaseTableModel)jTable3.getModel()).getSelectedLease(rowIndex),
-                        texts,jTable3,dataSource));
-                break;     */                   
+            case 2: //lease pane
+                jDialog.setTitle(bundle.getString("editRent"));                                                
+                jDialog.getContentPane().add(new RentWindow("edit",
+                        ((RentTableModel)jTable3.getModel()).getSelectedRent(rowIndex),
+                        bundle,jTable3));
+                break;     
         }
-   
+
         jDialog.pack();
         jDialog.setLocationRelativeTo(null);
         jDialog.setResizable(false);
         jDialog.setVisible(true);
     }
-    
+
     private void deleteActionPerformed(java.awt.event.ActionEvent evt) {
         //String[] options = new String[]{texts.getString("ok"),texts.getString("cancel")}; 
-        String[] options = new String[]{"Ok","Cancel"};
+        String[] options = new String[]{"Ok", "Cancel"};
         int row, choice;
-        switch(jTabbedPane1.getSelectedIndex()){
-            case 0: //client panel
+        switch (jTabbedPane1.getSelectedIndex()) {
+            case 0: 
                 choice = JOptionPane.showOptionDialog(null,
                         bundle.getString("deleteClientMessage"),
                         bundle.getString("deleteClient"),
@@ -349,17 +380,16 @@ public class MainFrame extends javax.swing.JFrame {
                         null,
                         options,
                         options[1]);
-                if(choice==0){
+                if (choice == 0) {
                     //delete from list of clients in clientTableModel
-                    Client client = ((ClientTableModel)jTable1.getModel()).getSelectedClient(jTable1.getSelectedRow());
-                    ((ClientTableModel)jTable1.getModel()).deleteClient(jTable1.getSelectedRow());
+                    Client client = ((ClientTableModel) jTable1.getModel()).getSelectedClient(jTable1.getSelectedRow());
+                    ((ClientTableModel) jTable1.getModel()).deleteClient(jTable1.getSelectedRow());
                     //add delete all rents wit client
                     //((LeaseTableModel)jTable3.getModel()).deleteCarWithId(c.getId());
                     //delete from database
-                    
                 }
                 break;
-            case 1: //customer pane
+            case 1: 
                 choice = JOptionPane.showOptionDialog(null,
                         bundle.getString("deleteBookMessage"),
                         bundle.getString("deleteBook"),
@@ -368,25 +398,27 @@ public class MainFrame extends javax.swing.JFrame {
                         null,
                         options,
                         options[1]);
-                if(choice==0){
-                    Book book = ((BookTableModel)jTable2.getModel()).getSelectedBook(jTable2.getSelectedRow());
-                    ((BookTableModel)jTable2.getModel()).deleteBook(jTable2.getSelectedRow());
+                if (choice == 0) {
+                    Book book = ((BookTableModel) jTable2.getModel()).getSelectedBook(jTable2.getSelectedRow());
+                    ((BookTableModel) jTable2.getModel()).deleteBook(jTable2.getSelectedRow());
+                    jComboBox1.removeAllItems();
                 }
                 break;
-            /*case 2: //lease pane
-                row = jTable3.getSelectedRow();
-                Lease l = ((LeaseTableModel)jTable3.getModel()).getSelectedLease(row);
+            case 2: 
                 choice = JOptionPane.showOptionDialog(null,
-                        texts.getString("deleteLeaseMessage"),
-                        texts.getString("delete"),
+                        bundle.getString("deleteRentMessage"),
+                        bundle.getString("deleteRent"),
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.WARNING_MESSAGE,
                         null,
                         options,
                         options[1]);
-                if(choice==0)
-                    ((LeaseTableModel)jTable3.getModel()).deleteLease(jTable3.getSelectedRow());
-                break;*/
+                if (choice == 0) {
+                    Rent rent = ((RentTableModel) jTable3.getModel()).getSelectedRent(jTable3.getSelectedRow());
+                    ((RentTableModel) jTable3.getModel()).deleteRent(jTable3.getSelectedRow());
+                    jComboBox1.removeAllItems();
+                }
+                break;
         }
     }
 
@@ -396,7 +428,26 @@ public class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jComboBox1ActionPerformed
 
     private void jButtonFilterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonFilterActionPerformed
-        //JOptionPane.showMessageDialog(null, "AHOJ");
+        /*final TableRowSorter<TableModel> sorter =
+                 new TableRowSorter<TableModel>(jTable2.getModel());
+        // jTable2.setRowSorter(sorter);
+        String text = jTextField1.getText();
+             if (text.length() == 0) {
+               sorter.setRowFilter(null);
+             } else {
+                 sorter.setRowFilter(
+                     RowFilter.regexFilter(text,1));
+                 RowFilter<BookTableModel, Object> rf = null;
+    //If current expression doesn't parse, don't update.
+    try {
+        rf = RowFilter.regexFilter(jTextField1.getText(), 0);
+                  RowFilter rowFilter = RowFilter.regexFilter(text, 1);
+                    //jTable2.getRowSorter().setRowFilter(rowFilter);
+               } catch (PatternSyntaxException pse) {
+                 System.err.println("Bad regex pattern");
+               }
+             }
+     jTable1.setRowSorter(sorter);*/
     }//GEN-LAST:event_jButtonFilterActionPerformed
 
     private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
@@ -410,6 +461,40 @@ public class MainFrame extends javax.swing.JFrame {
     private void jMenuItem5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem5ActionPerformed
         deleteActionPerformed(evt);
     }//GEN-LAST:event_jMenuItem5ActionPerformed
+
+    private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField1ActionPerformed
+
+    private void jTextField1FocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jTextField1FocusGained
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField1FocusGained
+
+    private void jTextField1PropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_jTextField1PropertyChange
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField1PropertyChange
+
+    private void jTabbedPane1StateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_jTabbedPane1StateChanged
+        switch (jTabbedPane1.getSelectedIndex()) {
+            case 0: 
+                jComboBox1.removeAllItems();
+                jComboBox1.addItem(jTable1.getColumnName(0));
+                jComboBox1.addItem(jTable1.getColumnName(1));
+                return;
+            case 1:
+                jComboBox1.removeAllItems();
+                jComboBox1.addItem(jTable2.getColumnName(0));
+                jComboBox1.addItem(jTable2.getColumnName(1));
+                jComboBox1.addItem(jTable2.getColumnName(2));
+                return;
+            case 2:
+                jComboBox1.removeAllItems();
+                jComboBox1.addItem(jTable3.getColumnName(0));
+                jComboBox1.addItem(jTable3.getColumnName(1));
+                jComboBox1.addItem(jTable3.getColumnName(2));
+                return;
+        }
+    }//GEN-LAST:event_jTabbedPane1StateChanged
 
     /**
      * @param args the command line arguments
