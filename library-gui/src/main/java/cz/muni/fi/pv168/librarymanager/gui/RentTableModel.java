@@ -16,6 +16,8 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import javax.sql.DataSource;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.SwingWorker;
 import javax.swing.table.AbstractTableModel;
 
@@ -48,6 +50,14 @@ public class RentTableModel extends AbstractTableModel{
     }
     
     public void addRent(Rent rent) {
+        for (Rent iRent : rents) {
+                    if (iRent.getBook().equals(rent.getBook())) {
+                        final JPanel panel = new JPanel();
+                        JOptionPane.showMessageDialog(panel, "The book is already rented", 
+                            "BOOK NOT AVAILABLE", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+        }
         SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() throws Exception {
