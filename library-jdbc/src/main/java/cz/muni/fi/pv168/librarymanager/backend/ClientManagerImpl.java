@@ -8,10 +8,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.sql.DataSource;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 /**
  *
  * @author Diana Vilkolakova
@@ -20,7 +19,7 @@ import javax.sql.DataSource;
  */
 public class ClientManagerImpl implements ClientManager {
     
-    private static final Logger logger = Logger.getLogger(
+    private static final Logger logger = LoggerFactory.getLogger(
             ClientManagerImpl.class.getName());
     
     private DataSource dataSource;
@@ -55,20 +54,22 @@ public class ClientManagerImpl implements ClientManager {
                 Client client = resultSetToClient(rs);
 
                 if (rs.next()) {
+                    logger.error("More clients was found when retrieving client with id"+client.getId());
                     throw new ServiceFailureException(
                             "Internal error: More entities with the same id found "
                             + "(source id: " + id + ", found " + client + 
                             " and " + resultSetToClient(rs));
                 }
-
+                logger.info("Retriving client with id "+id);
                 return client;
             } else {
+                logger.info("Client with id "+id+" was not found");
                 return null;
             }
 
         } catch (SQLException ex) {
             String msg = "Error when retrieving client with id " + id;
-            logger.log(Level.SEVERE, msg, ex);
+            logger.error(msg);
             throw new ServiceFailureException(msg, ex); 
         }
     }
@@ -86,10 +87,11 @@ public class ClientManagerImpl implements ClientManager {
             while (rs.next()) {
                 clients.add(resultSetToClient(rs));
             }
+            logger.info("Retrived all clients");
             return clients;
         } catch (SQLException ex) {
-            String msg = "Error when getting all clients from DB";
-            logger.log(Level.SEVERE, msg, ex);
+            String msg = "Error when retrivering all clients from DB";
+            logger.error(msg, ex);
             throw new ServiceFailureException(msg, ex);
         }
     }
@@ -111,16 +113,18 @@ public class ClientManagerImpl implements ClientManager {
             st.setString(2, client.getSurname());
             int addedRows = st.executeUpdate();
             if (addedRows != 1) {
+                logger.error("Error while creating client - more rows affected");
                 throw new ServiceFailureException("Internal Error: More rows ("
                         + addedRows + ") inserted when trying to insert client " + client);
             }
 
             ResultSet keyRS = st.getGeneratedKeys();
             client.setId(getKey(keyRS, client));
+            logger.info("Client was created. Generated id "+client.getId());
 
         } catch (SQLException ex) {
             String msg = "Error when inserting client " + client;
-            logger.log(Level.SEVERE, msg, ex);
+            logger.error(msg, ex);
             throw new ServiceFailureException(msg, ex); 
         }
     }
@@ -177,6 +181,7 @@ public class ClientManagerImpl implements ClientManager {
         checkDataSource();
         validate(client);
         if (client.getId() == null) {
+            logger.error("Error while updating client - null id given");
             throw new IllegalEntityException("client id is null");
         }
         try (Connection connection = dataSource.getConnection();
@@ -189,13 +194,15 @@ public class ClientManagerImpl implements ClientManager {
 
             int count = st.executeUpdate();
             if (count == 0) {
+                logger.error("Client with id "+client.getId()+" not found");
                 throw new IllegalEntityException("Client " + client + " was not found in database!");
             } else if (count != 1) {
+                logger.error("Error while updating client with id "+client.getId()+" - more rows affected");
                 throw new ServiceFailureException("Invalid updated rows count detected (one row should be updated): " + count);
             }
         } catch (SQLException ex) {
             String msg = "Error when updating client " + client;
-            logger.log(Level.SEVERE, msg, ex);
+            logger.error(msg, ex);
             throw new ServiceFailureException(msg, ex); 
         }
     }
@@ -204,9 +211,11 @@ public class ClientManagerImpl implements ClientManager {
     public void deleteClient(Client client) {
         checkDataSource();
         if (client == null) {
+            logger.error("Client to delete is null");
             throw new IllegalArgumentException("client is null");
         }
         if (client.getId() == null) {
+            logger.error("Client to delete has null id");
             throw new IllegalEntityException("client id is null");
         }
         try (Connection connection = dataSource.getConnection();
@@ -217,13 +226,15 @@ public class ClientManagerImpl implements ClientManager {
 
             int count = st.executeUpdate();
             if (count == 0) {
+                logger.error("Client with id "+client.getId()+" to delete has not found");
                 throw new IllegalEntityException("Client " + client + " was not found in database!");
             } else if (count != 1) {
+                logger.error("Error while deleting client with id "+client.getId()+" - more rows affected");
                 throw new ServiceFailureException("Invalid deleted rows count detected (one row should be updated): " + count);
             }
         } catch (SQLException ex) {
             String msg = "Error when deleting client " + client;
-            logger.log(Level.SEVERE, msg, ex);
+            logger.error(msg, ex);
             throw new ServiceFailureException(msg, ex);
         }
     }
@@ -242,11 +253,12 @@ public class ClientManagerImpl implements ClientManager {
             while (rs.next()) {
                 result.add(resultSetToClient(rs));
             }
+            logger.info("Retriving client with name "+name);
             return result;
 
         } catch (SQLException ex) {
-            String msg = "Error when retrieving all clients";
-            logger.log(Level.SEVERE, msg, ex);
+            String msg = "Error when retrieving client with name "+name;
+            logger.error(msg, ex);
             throw new ServiceFailureException(msg, ex);
         }
     }
@@ -269,7 +281,7 @@ public class ClientManagerImpl implements ClientManager {
 
         } catch (SQLException ex) {
             String msg = "Error when retrieving clients with surname "+surname;
-            logger.log(Level.SEVERE, msg, ex);
+            logger.error(msg, ex);
             throw new ServiceFailureException(msg, ex);
         }
     }

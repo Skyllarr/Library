@@ -12,9 +12,9 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.sql.DataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -24,7 +24,7 @@ import javax.sql.DataSource;
  */
 public class BookManagerImpl implements BookManager {
 
-    private static final Logger logger = Logger.getLogger(
+    private static final Logger logger = LoggerFactory.getLogger(
             BookManagerImpl.class.getName());
     
     private DataSource dataSource;
@@ -56,10 +56,11 @@ public class BookManagerImpl implements BookManager {
             while (rs.next()) {
                 result.add(resultSetToBook(rs));
             }
+            logger.info("Retriving all books");
             return result;
         } catch (SQLException ex) {
             String msg = "Error when getting all books from DB";
-            logger.log(Level.SEVERE, msg, ex);
+            logger.error(msg, ex);
             throw new ServiceFailureException(msg, ex);
         }          
     }
@@ -82,16 +83,18 @@ public class BookManagerImpl implements BookManager {
             st.setInt(3, book.getYearOfPublication());
             int addedRows = st.executeUpdate();
             if (addedRows != 1) {
+                logger.error("Error while creating book - more rows affected");
                 throw new ServiceFailureException("Internal Error: More rows ("
                         + addedRows + ") inserted when trying to insert book " + book);
             }
 
             ResultSet keyRS = st.getGeneratedKeys();
             book.setId(getKey(keyRS, book));
+            logger.info("Book with id "+book.getId()+" was created");
 
         } catch (SQLException ex) {
             String msg = "Error when inserting book " + book;
-            logger.log(Level.SEVERE, msg, ex);
+            logger.error(msg, ex);
             throw new ServiceFailureException(msg, ex);
         }
     }
@@ -148,6 +151,7 @@ public class BookManagerImpl implements BookManager {
         checkDataSource();
         validate(book);
         if (book.getId() == null) {
+            logger.error("Error when updating book - book id is null");
             throw new IllegalEntityException("book id is null");
         }
         try (Connection connection = dataSource.getConnection();
@@ -161,13 +165,15 @@ public class BookManagerImpl implements BookManager {
 
             int count = st.executeUpdate();
             if (count == 0) {
+                logger.error("Error when updating book - book with id "+book.getId()+" was not found");
                 throw new IllegalEntityException("Book " + book + " was not found in database!");
             } else if (count != 1) {
+                logger.error("Error when updating book - more rows affected");
                 throw new ServiceFailureException("Invalid updated rows count detected (one row should be updated): " + count);
             }
         } catch (SQLException ex) {
             String msg = "Error when updating book " + book;
-            logger.log(Level.SEVERE, msg, ex);
+            logger.error(msg, ex);
             throw new ServiceFailureException(msg, ex);
             
         }
@@ -177,9 +183,11 @@ public class BookManagerImpl implements BookManager {
     public void deleteBook(Book book) {
         checkDataSource();
         if (book == null) {
+            logger.error("Error whe delete book - null book");
             throw new IllegalArgumentException("book is null");
         }
         if (book.getId() == null) {
+            logger.error("Error whe delete book - book id is null");
             throw new IllegalEntityException("book id is null");
         }
         try (Connection connection = dataSource.getConnection();
@@ -194,9 +202,10 @@ public class BookManagerImpl implements BookManager {
             } else if (count != 1) {
                 throw new ServiceFailureException("Invalid deleted rows count detected (one row should be updated): " + count);
             }
+            logger.info("Book with id "+book.getId()+" was deleted");
         } catch (SQLException ex) {
             String msg = "Error when deleting book " + book;
-            logger.log(Level.SEVERE, msg, ex);
+            logger.error(msg, ex);
             throw new ServiceFailureException(msg, ex);
         }
     }
@@ -215,11 +224,12 @@ public class BookManagerImpl implements BookManager {
             while (rs.next()) {
                 result.add(resultSetToBook(rs));
             }
+            logger.info("Retriving books with author " + author);
             return result;
 
         } catch (SQLException ex) {
             String msg = "Error when retrieving all books by author "+author;
-            logger.log(Level.SEVERE, msg, ex);
+            logger.error(msg, ex);
             throw new ServiceFailureException(msg, ex);            
         }
     }
@@ -238,11 +248,12 @@ public class BookManagerImpl implements BookManager {
             while (rs.next()) {
                 result.add(resultSetToBook(rs));
             }
+            logger.info("Retriving books with title " + title);
             return result;
 
         } catch (SQLException ex) {
             String msg = "Error when retrieving all books with title "+title;
-            logger.log(Level.SEVERE, msg, ex);
+            logger.error(msg, ex);
             throw new ServiceFailureException(msg, ex); 
         }
     }
@@ -265,6 +276,7 @@ public class BookManagerImpl implements BookManager {
                             "Internal error: More entities with the same id found "
                             + "(source id: " + id + ", found " + book + " and " + resultSetToBook(rs));
                 }
+                logger.info("Retriving book with id "+id);
                 return book;
             } else {
                 return null;
@@ -272,7 +284,7 @@ public class BookManagerImpl implements BookManager {
 
         } catch (SQLException ex) {
             String msg = "Error when retrieving book with id " + id;
-            logger.log(Level.SEVERE, msg, ex);
+            logger.error(msg, ex);
             throw new ServiceFailureException(msg, ex); 
         }
     }
