@@ -6,6 +6,7 @@ import cz.muni.fi.pv168.librarymanager.backend.ClientManagerImpl;
 import java.awt.EventQueue;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ResourceBundle;
 import javax.sql.DataSource;
 import javax.swing.SwingWorker;
 import javax.swing.table.AbstractTableModel;
@@ -17,9 +18,11 @@ public class ClientTableModel extends AbstractTableModel {
     
     private final List<Client> clients = new ArrayList<>();
     private final ClientManager clientManager;
+    private final ResourceBundle bundle;
 
-    public ClientTableModel(DataSource dataSource) {
-        clientManager = new ClientManagerImpl(dataSource);
+    public ClientTableModel(ResourceBundle bundle, DataSource dataSource) {
+        this.clientManager = new ClientManagerImpl(dataSource);
+        this.bundle = bundle;
         SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() throws Exception {
@@ -35,7 +38,6 @@ public class ClientTableModel extends AbstractTableModel {
             @Override
             protected Void doInBackground() throws Exception {
                 clientManager.createClient(client);
-                System.out.println(client);
                 return null;
             }
 

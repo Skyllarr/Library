@@ -11,13 +11,12 @@ import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Arrays;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.PatternSyntaxException;
 import javax.sql.DataSource;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
@@ -33,14 +32,18 @@ import org.apache.commons.dbcp2.BasicDataSource;
  */
 public class MainFrame extends javax.swing.JFrame {
 
-    private final ResourceBundle bundle = ResourceBundle.getBundle("Bundle");
+    private static ResourceBundle bundle;
     private DataSource dataSource;
 
 //    private final ResourceBundle bundle = null;
     public MainFrame() {
         DataSourceSwingWorker dataSourceSwingWorker = new DataSourceSwingWorker();
         dataSourceSwingWorker.execute();
-
+        /*String bundleName = MainFrame.class.getPackage().getName() 
+                + ".Bundle"+"_"+Locale.getDefault().toString();*/
+        String bundleName = MainFrame.class.getPackage().getName() 
+                + ".Bundle"+"_cs_CZ";
+        bundle = ResourceBundle.getBundle(bundleName);
     }
 
     private class DataSourceSwingWorker extends SwingWorker<DataSource, Void> {
@@ -75,6 +78,7 @@ public class MainFrame extends javax.swing.JFrame {
     private DataSource setDataSource() {
         Properties dbconf = new Properties();
         try {
+            
             dbconf.load(MainFrame.class.getResourceAsStream("/dbconf.properties"));
         } catch (IOException ex) {
             Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
@@ -148,13 +152,11 @@ public class MainFrame extends javax.swing.JFrame {
             }
         });
 
-        jTable1.setAutoCreateRowSorter(true);
-        jTable1.setModel(new ClientTableModel(dataSource));
+        jTable1.setModel(new ClientTableModel(bundle, dataSource));
         jScrollPane1.setViewportView(jTable1);
 
         jTabbedPane1.addTab("Clients", jScrollPane1);
 
-        jTable2.setAutoCreateRowSorter(true);
         jTable2.setModel(new BookTableModel(dataSource));
         jScrollPane2.setViewportView(jTable2);
 

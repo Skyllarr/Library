@@ -154,7 +154,7 @@ public class RentWindow extends javax.swing.JPanel {
         jTable1.setModel(new BookTableModel(dataSource));
         jScrollPane1.setViewportView(jTable1);
 
-        jTable2.setModel(new ClientTableModel(dataSource));
+        jTable2.setModel(new ClientTableModel(bundle, dataSource));
         jScrollPane2.setViewportView(jTable2);
 
         jLabel2.setText("Number of months:");
